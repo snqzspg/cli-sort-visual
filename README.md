@@ -14,6 +14,21 @@ Then the sorting algorithm will be started to sort the "bars" into their respect
 
 The number of comparisons and writes will be kept tracked of during the sorting process.
 
+## Contents
+
+1. [Building (or "Installing")](#a-short-description)
+    1. [Prerequisites](#prerequisites)
+    2. [GCC](#1-gcc)
+        1. [Windows](#windows)
+        2. [macOS](#macos)
+        3. [Linux](#linux)
+    3. [PortAudio](#2-portaudio)
+        1. [Windows](#windows-1)
+        2. [macOS](#macos-1)
+        3. [Linux](#linux-1)
+    4. [Building](#building)
+2. [Tweaking](#tweaking)
+
 ## Building (or "Installing")
 
 Currently there are no binaries available to download, so you may have to do some code compiling yourself.
