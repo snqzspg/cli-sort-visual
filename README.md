@@ -2,8 +2,6 @@
 
 Sort for fun, sort of fun
 
-> This project is on its first days on GitHub. It may take some time to create this page.
-
 ## A short description...
 
 When started the applications presents an array of numbers. Each integer is represented as a vertical bar to a certain height; larger numbers produces taller heights.
