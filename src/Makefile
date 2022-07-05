@@ -14,7 +14,7 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.0.0
-BUILD = 202207041744
+BUILD = 202207060418
 IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
@@ -90,7 +90,7 @@ MAKE_WAV_BIN_CLEAN = $(MAKE_WAV_BIN:%=%_d)
 
 # https://stackoverflow.com/questions/714100/os-detecting-makefile
 ifeq ($(OS),Windows_NT)
-    TERM_VIS_FLAGS = -DDEFAULT_DIS_DELAY=10 -DACCOUNT_PRINT_LEN
+    TERM_VIS_FLAGS = -DDEFAULT_DIS_DELAY=10 -DACCOUNT_PRINT_LEN -DPRINT_TIME_W_O_DELAY=0
 
     RM = del
     rmiexist = if exist $(subst /,\,$1) del $(subst /,\,$1)
