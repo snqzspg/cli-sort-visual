@@ -367,7 +367,7 @@ int vis_main_visargs(int argc, char** argv, const char* algo_name, call_sort_t c
  * @param algo_name The name of the algorithm to be displayed on the top left.
  * @param call_sort A function pointer that points to the function that calls the sorting algorithm. See call_comparison_sort above for an example.
  * @param nvis_args The number of extra parameters to pass to your sorts. 
- * @param vis_args A va_list of vis_arg_t objects that will be passed to the call_sort function. (See set_vis_arg above).
+ * @param vis_args A va_list of POINTERS to vis_arg_t objects that will be passed to the call_sort function. (See set_vis_arg above).
  *        Each object can be set to receive input from user, which will then be passed into the call_sort function.
  *        The order the objects given will be the same order passed into the call_sort function.
  *        The number of vis_args objects given must match the count given in nvis_args.
@@ -392,7 +392,7 @@ int vis_main_vargs(int argc, char** argv, const char* algo_name, call_sort_t cal
  * @param algo_name The name of the algorithm to be displayed on the top left.
  * @param call_sort A function pointer that points to the function that calls the sorting algorithm. See call_comparison_sort above for an example.
  * @param nvis_args The number of extra parameters to pass to your sorts. 
- * @param ... vis_arg_t objects that will be passed to the call_sort function. (See set_vis_arg above).
+ * @param ... POINTERS to vis_arg_t objects that will be passed to the call_sort function. (See set_vis_arg above).
  *        Each object can be set to receive input from user, which will then be passed into the call_sort function.
  *        The order the objects given will be the same order passed into the call_sort function.
  *        The number of vis_args objects given must match the count given in nvis_args.
