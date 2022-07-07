@@ -85,14 +85,14 @@ static size_t additive_sines_count = 5;
 static size_t additive_sines_allocated = 5;
 
 static harmonic_t violin[8] = {
-	{.rel_freq = 1.0, .amp = 0.995, .type = ADD_SINE},
-	{.rel_freq = 2.0, .amp = 0.94, .type = ADD_COSINE},
-	{.rel_freq = 3.0, .amp = 0.425, .type = ADD_SINE},
-	{.rel_freq = 4.0, .amp = 0.480, .type = ADD_COSINE},
-	{.rel_freq = 6.0, .amp = 0.365, .type = ADD_COSINE},
-	{.rel_freq = 7.0, .amp = 0.040, .type = ADD_SINE},
-	{.rel_freq = 8.0, .amp = 0.085, .type = ADD_COSINE},
-	{.rel_freq = 10.0, .amp = 0.090, .type = ADD_COSINE}
+	{.rel_freq = 1.0, .amp = 0.291, .type = ADD_SINE},
+	{.rel_freq = 2.0, .amp = 0.274854, .type = ADD_COSINE},
+	{.rel_freq = 3.0, .amp = 0.124269, .type = ADD_SINE},
+	{.rel_freq = 4.0, .amp = 0.140351, .type = ADD_COSINE},
+	{.rel_freq = 6.0, .amp = 0.106725, .type = ADD_COSINE},
+	{.rel_freq = 7.0, .amp = 0.011696, .type = ADD_SINE},
+	{.rel_freq = 8.0, .amp = 0.024854, .type = ADD_COSINE},
+	{.rel_freq = 10.0, .amp = 0.026316, .type = ADD_COSINE}
 };
 static size_t nviolin_harmonics = 8;
 
@@ -420,6 +420,8 @@ static int audreq_handle_tick(const void *input_buffer, void *output_buffer, uns
 
 #define using_std_addsines (additive_sines == standard_additive_sine)
 
+#define strip_int(x) ((x) - (double) ((int) (x)))
+
 double additive_sine_wave_fx(double relative_phase) {
 	double r = 0.0;
 	// assert that sum of all amplitudes = 1.0
@@ -429,13 +431,13 @@ double additive_sine_wave_fx(double relative_phase) {
 				r += cos(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
 				break;
 			case ADD_TRIANGLE:
-				r += triangle_wave_fx(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += triangle_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
 				break;
 			case ADD_SQUARE:
-				r += square_wave_fx(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += square_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
 				break;
 			case ADD_SAW:
-				r += saw_wave_fx(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += saw_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
 				break;
 			case ADD_SINE:
 			default:
@@ -445,6 +447,9 @@ double additive_sine_wave_fx(double relative_phase) {
 	}
 	if (r > 1.0) {
 		r = 1.0;
+	}
+	if (r < -1.0) {
+		r = -1.0;
 	}
 	return r;
 }
@@ -457,15 +462,6 @@ double violin_wave_fx(double relative_phase) {
 			case ADD_COSINE:
 				r += cos(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
 				break;
-			case ADD_TRIANGLE:
-				r += triangle_wave_fx(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-				break;
-			case ADD_SQUARE:
-				r += square_wave_fx(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-				break;
-			case ADD_SAW:
-				r += saw_wave_fx(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-				break;
 			case ADD_SINE:
 			default:
 				r += sin(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
@@ -474,6 +470,9 @@ double violin_wave_fx(double relative_phase) {
 	}
 	if (r > 1.0) {
 		r = 1.0;
+	}
+	if (r < -1.0) {
+		r = -1.0;
 	}
 	return r;
 }
@@ -655,14 +654,12 @@ static void strip_spaces(char* s) {
 }
 
 static void normalize_harmonics(harmonic_t* __restrict__ harmonics, size_t nharmonics) {
-	double max_amp = 0.0;
+	double sum_amp = 0.0;
 	for (size_t i = 0; i < nharmonics; i++) {
-		if (max_amp < harmonics[i].amp) {
-			max_amp = harmonics[i].amp;
-		}
+		sum_amp += harmonics[i].amp;
 	}
 	for (size_t i = 0; i < nharmonics; i++) {
-		harmonics[i].amp /= max_amp;
+		harmonics[i].amp /= sum_amp;
 	}
 }
 
