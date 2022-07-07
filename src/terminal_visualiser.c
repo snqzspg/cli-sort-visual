@@ -76,6 +76,10 @@
 #define VERIFY_DELAY_FACTOR 1.0
 #endif
 
+#ifndef PRINT_PRECISE_TIME
+#define PRINT_PRECISE_TIME 0
+#endif
+
 #ifndef PRINT_TIME_W_O_DELAY
 #define PRINT_TIME_W_O_DELAY 1
 #endif
@@ -146,6 +150,7 @@ static int ideal_crotchet_dur = IDEAL_CROTCHET_DUR_MS;
 static int min_sound_len = MIN_SOUND_LEN;
 static double shuffle_delay_factor = SHUFFLE_DELAY_FACTOR;
 static double verify_delay_factor = VERIFY_DELAY_FACTOR;
+static char print_precise_time = PRINT_PRECISE_TIME;
 static char print_estimated_real_time = PRINT_TIME_W_O_DELAY;
 static double tuning_freq = TUNING_FREQ;
 static char use_eq_temp = USE_EQ_TEMP;
@@ -187,6 +192,7 @@ static char delay_secs_overflow = 0;
 // ========== Helper functions breadcrumbs ==========
 
 static void print_time(double secs, int ncols);
+static void print_mstime(mstime_t msecs, int ncols);
 static void print_time_long(time_t secs, int ncols);
 static int find_max_int(int* arr, size_t len);
 void sleep_ms(int milliseconds);
@@ -206,7 +212,7 @@ static size_t base_n_modulo(const void* a, size_t b);
 static int get_chord_mode(const char *arg, int* __restrict__ chord_id);
 static int get_chord_timing(int delay_ms);
 static double get_freq_by_pointer(const int *p);
-static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape);
+static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization);
 static int read_chord_progression_from_file();
 static void custom_progression_cleanup();
 
@@ -229,9 +235,9 @@ static int buffer_optimize_cleanup(char force);
 
 // ========== Visulizer start and cleanup functions breadcrumbs ==========
 
-static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char* algo_name);
-static int get_sort_status(int *d_array_clone, int array_len);
-static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args);
+static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name);
+static int get_sort_status(int *d_array_clone, int array_len, const char optimization_on);
+static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args);
 // static int perform_radix_sort_visual(int delay, int arr_len, const char* shuffle_type, size_t unsigned_base, const char* chord_arg, double maxamp, char* wave_type, void (*sort_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t)), const char* algo_name);
 /**
  * Returns 1 if program should exit
@@ -331,8 +337,9 @@ int vis_main_visargs(int argc, char** argv, const char* algo_name, call_sort_t c
 	char *chord_arg = NULL;
 	char default_wave[] = "square";
 	char* wave_type = default_wave;
+	char use_optimization = 1;
 	int arg_id = 0;
-	set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type);
+	set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type, &use_optimization);
 	if (process_args(&delay, &arr_len, &shuffle, argc, argv, &arg_id, nvis_args, vis_args)) {
 		return 0;
 	}
@@ -352,10 +359,7 @@ int vis_main_visargs(int argc, char** argv, const char* algo_name, call_sort_t c
 	if (process_args_2(&chord_arg, &max_sound_amplitude, &wave_type, argc, argv, &arg_id)) {
 		return 0;
 	}
-	// if (argc >= arg_id + 1) {
-	// 	chord_arg = argv[arg_id];
-	// }
-	return perform_sort_visual(delay, arr_len, shuffle, chord_arg, max_sound_amplitude, wave_type, algo_name, call_sort, nvis_args, vis_args);
+	return perform_sort_visual(delay, arr_len, shuffle, chord_arg, max_sound_amplitude, wave_type, use_optimization, algo_name, call_sort, nvis_args, vis_args);
 }
 
 /**
@@ -466,27 +470,6 @@ int vis_main_radix(int argc, char** argv, size_t default_radix_base, const char*
  */
 int perform_sort_visual_args(int argc, char** argv, void (*sort_algo)(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*)), const char* algo_name) {
 	return vis_main_comparison(argc, argv, algo_name, sort_algo);
-
-	// compr_algo = sort_algo;
-
-	// int delay = DEFAULT_DIS_DELAY;
-	// int arr_len = DEFAULT_ARR_LEN;
-	// char *shuffle = NULL;
-	// char *chord_arg = NULL;
-	// char default_wave[] = "square";
-	// char* wave_type = default_wave;
-	// set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type);
-	// int arg_id = 0;
-	// if (process_args(&delay, &arr_len, &shuffle, argc, argv, &arg_id, 0, NULL)) {
-	// 	return 0;
-	// }
-	// if (process_args_2(&chord_arg, &max_sound_amplitude, &wave_type, argc, argv, &arg_id)) {
-	// 	return 0;
-	// }
-	// if (argc >= arg_id + 1) {
-	// 	chord_arg = argv[arg_id];
-	// }
-	// return perform_sort_visual(delay, arr_len, shuffle, chord_arg, max_sound_amplitude, wave_type, algo_name, call_comparison_sort, 0, NULL);
 }
 
 /**
@@ -494,39 +477,13 @@ int perform_sort_visual_args(int argc, char** argv, void (*sort_algo)(void* list
  */
 int perform_radix_sort_visual_args(int argc, char** argv, size_t default_radix_base, void (*sort_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t)), const char* algo_name) {
 	return vis_main_radix(argc, argv, default_radix_base, algo_name, sort_algo);
-
-	// int delay = DEFAULT_DIS_DELAY;
-	// int arr_len = DEFAULT_ARR_LEN;
-	// char *shuffle = NULL;
-	// int radix_arg_id = 4;
-	// char *chord_arg = NULL;
-	// char default_wave[] = "square";
-	// char* wave_type = default_wave;
-	// set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type);
-	// if (process_args(&delay, &arr_len, &shuffle, argc, argv, 1, &radix_arg_id, default_radix_base)) {
-	// 	return 0;
-	// }
-	// if (argc >= radix_arg_id + 1) {
-	// 	int n = atoi(argv[radix_arg_id]);
-	// 	if (n > 1) {
-	// 		radix_base = (size_t) n;
-	// 		radix_arg_id++;
-	// 	}
-	// }
-	// if (process_args_2(&chord_arg, &max_sound_amplitude, &wave_type, argc, argv, &radix_arg_id)) {
-	// 	return 0;
-	// }
-	// if (argc >= radix_arg_id + 1) {
-	// 	chord_arg = argv[radix_arg_id];
-	// }
-	// return perform_radix_sort_visual(delay, arr_len, shuffle, radix_base, chord_arg, max_sound_amplitude, wave_type, sort_algo, algo_name);
 }
 
 // ========== End main functions ==========
 
 // ========== Visulizer start and cleanup functions ==========
 
-static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char* algo_name) {
+static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name) {
 	#ifdef _WIN32
 	clear_screen_win32_init();
 	#endif
@@ -555,7 +512,9 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 	}
 	chord_progression_timing_ms = get_chord_timing(delay);
 	read_chord_progression_from_file();
-	buffer_optimize_init();
+	if (optimization_on) {
+		buffer_optimize_init();
+	}
 	ioext_init(pgcg_get_console_cols());
 
 	clear_screen_(1);
@@ -573,7 +532,7 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 	print_array_bars("Shuffling Done! :D", NULL, 0, NULL, 0, 1);
 }
 
-static int get_sort_status(int *d_array_clone, int array_len) {
+static int get_sort_status(int *d_array_clone, int array_len, const char optimization_on) {
 	int incorrect_index = 0;
 
 	delay_factor = verify_delay_factor;
@@ -586,7 +545,9 @@ static int get_sort_status(int *d_array_clone, int array_len) {
 	char catprefix[get_concat_sort_name_len(sort_correct ? prefixtxt_success : prefixtxt_fail)];
 	cpy_concat_sort_name(catprefix, sort_correct ? prefixtxt_success : prefixtxt_fail);
 	print_array_bars(catprefix, sort_correct ? NULL : display_array + incorrect_index, !sort_correct, sort_correct ? NULL : display_array + incorrect_index - 1, !sort_correct, 0);
-	buffer_optimize_cleanup(1);
+	if (optimization_on) {
+		buffer_optimize_cleanup(1);
+	}
 	ioext_cleanup();
 	custom_progression_cleanup();
 	display_name = NULL;
@@ -602,21 +563,20 @@ static int get_sort_status(int *d_array_clone, int array_len) {
 	return !sort_correct;
 }
 
-static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args) {
+static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args) {
 	int d_array[arr_len];
 	int d_array_clone[arr_len];
 
-	prepare_visual(d_array, d_array_clone, delay, arr_len, shuffle_type, chord_arg, maxamp, wave_type, algo_name);
+	prepare_visual(d_array, d_array_clone, delay, arr_len, shuffle_type, chord_arg, maxamp, wave_type, optimization_on, algo_name);
 
 	include_sleep_time = should_include_sleep_time(1000);
 
 	reset_counters();
 	is_sorting = 1;
-	// sort_algo(display_array, display_array_len, sizeof(int), larger_int_back);
 	call_sort(display_array, display_array_len, sizeof(int), larger_int_back, nvis_args, vis_args);
 	is_sorting = 0;
 
-	return get_sort_status(d_array_clone, arr_len);
+	return get_sort_status(d_array_clone, arr_len, optimization_on);
 }
 
 // static int perform_radix_sort_visual(int delay, int arr_len, const char* shuffle_type, size_t unsigned_base, const char* chord_arg, double maxamp, char* wave_type, void (*sort_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t)), const char* algo_name) {
@@ -747,24 +707,30 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 	pnt_trunc_f("Comparisons:%s %lu\n", ncols, comparisons_overflow ? " more than" : "", comparisons);
 	pnt_trunc_f("Writes to main array:%s %lu\n", ncols, writes_overflow ? " more than" : "", writes);
 	pnt_trunc_f("Writes to additional array(s):%s %lu\n", ncols, aux_writes_overflow ? " more than" : "", aux_writes);
+
 	time_t t1 = clock() - start_time;
-	time_t vt1 = time(NULL) - vis_start_time;
-	// mstime_t mst1 = mstime() - start_time_ms;
 	pnt_trunc("Time taken: ", ncols);
-	print_time_long(vt1, ncols);
-	// pnt_trunc(" [precise (WIP): ", ncols);
-	// if (include_sleep_time) {
-	// 	if (delay_secs_overflow) {
-	// 		pnt_trunc("too long!", ncols);
-	// 	} else {
-	// 		print_time((double)(t1 + delay_secs) / CLOCKS_PER_SEC, ncols);
-	// 	}
-	// } else {
-	// 	print_time((double)t1 / CLOCKS_PER_SEC);
-	// }
-	// pnt_trunc(" / ", ncols);
-	// print_time((double) mst1 / 1000.0, ncols);
-	// pnt_trunc("]", ncols);
+	if (print_precise_time) {
+		mstime_t mst1 = mstime() - start_time_ms;
+		// pnt_trunc(" [precise (WIP): ", ncols);
+		// if (include_sleep_time) {
+		// 	if (delay_secs_overflow) {
+		// 		pnt_trunc("too long!", ncols);
+		// 	} else {
+		// 		print_time((double)(t1 + delay_secs) / CLOCKS_PER_SEC, ncols);
+		// 	}
+		// } else {
+		// 	print_time((double)t1 / CLOCKS_PER_SEC);
+		// }
+		// pnt_trunc(" / ", ncols);
+		// print_time((double) mst1 / 1000.0, ncols);
+		// pnt_trunc("]", ncols);
+		print_mstime(mst1, ncols);
+	} else {
+		time_t vt1 = time(NULL) - vis_start_time;
+		print_time_long(vt1, ncols);
+	}
+
 	pnt_trunc("\n", ncols);
 	if (print_estimated_real_time) {
 		pnt_trunc("Estimated time w/o delay: ", ncols);
@@ -785,12 +751,6 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 	fflush(stdout);
 	if (play_sound && (pointer_in_array(p1) || pointer_in_array(p2))) {
 		double freqs[2];
-		// freqs[0] = pointer_in_array(p1) ? get_freq_between_bounds(display_array[i1], highest_item, VIS_LOWER_CENT_BOUND, VIS_HIGHER_CENT_BOUND) : 440.0;
-		// freqs[1] = pointer_in_array(p2) ? get_freq_between_bounds(display_array[i2], highest_item, VIS_LOWER_CENT_BOUND, VIS_HIGHER_CENT_BOUND) : 440.0;
-		// freqs[0] = pointer_in_array(p1) ? get_freq_between_bounds_semitones(display_array[i1], highest_item, VIS_LOWER_SEMITONE_BOUND, VIS_HIGHER_SEMITONE_BOUND) : 440.0;
-		// freqs[1] = pointer_in_array(p2) ? get_freq_between_bounds_semitones(display_array[i2], highest_item, VIS_LOWER_SEMITONE_BOUND, VIS_HIGHER_SEMITONE_BOUND) : 440.0;
-		// freqs[0] = pointer_in_array(p1) ? get_freq_between_bounds_arpeggio(display_array[i1], highest_item, CHORD_START_SEMITONE, CHORD_OCTAVE_RANGE, chord_progression[is_sorting ? ((int) mst1 / chord_progression_timing_ms) % chord_progression_len : 0]) : 440.0;
-		// freqs[1] = pointer_in_array(p2) ? get_freq_between_bounds_arpeggio(display_array[i2], highest_item, CHORD_START_SEMITONE, CHORD_OCTAVE_RANGE, chord_progression[is_sorting ? ((int) mst1 / chord_progression_timing_ms) % chord_progression_len : 0]) : 440.0;
 		freqs[0] = get_freq_by_pointer((const int *) p1);
 		freqs[1] = get_freq_by_pointer((const int *) p2);
 		double minfreq = pointer_in_array(p1) ? freqs[0] : freqs[1];
@@ -1565,14 +1525,14 @@ static void final_radix_pass() {
 	int i1 = 0;
 	for (int i = 0; i < len1; i++) {
 		display_array[i1] = tmp_arr1[i];
-		i1++;
 		mark_array_write();
 		print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+		i1++;
 		if (i < len2) {
 			display_array[i1] = tmp_arr2[i];
-			i1++;
 			mark_array_write();
 			print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+			i1++;
 		}
 	}
 }
@@ -1806,7 +1766,6 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 			printf(" [%s]", vis_args[i].name);
 		}
 	}
-	// printf("%s", basename, is_radix ? " [radix_base]" : "");
 	printf(" [tone_interval] [wave_shape] [max_amplidude]\n");
 	printf("       %s h|help\n\n", basename);
 	printf("       nologsound    [Optional] Enter this term for this app not to write sound data.\n");
@@ -1861,10 +1820,6 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 			fputs(vis_args[i].info, stdout);
 		}
 	}
-	// if (is_radix) {
-	// 	printf("       radix_base    [Optional] The base for the radix sort.\n");
-	// 	printf("                     Default is base-%lu\n", (unsigned long) default_radix_base);	
-	// }
 	printf("       tone_interval [Optional] The interval between different elements. Default is 'cent'.\n");
 	printf("                     The possible values are:\n");
 	printf("                       'cent'                The tone interval increases by cents. 1 semitone = 100 cents. This is default.\n");
@@ -1881,12 +1836,13 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("                       [More possible values are generated in the '%s' file. Remember to add 'chord_' before each of the values.]\n", CHORD_PROGRESS_FILE);
 	printf("       wave_shape    [Optional] The texture of the sound. Default is 'square'.\n");
 	printf("                     The possible values are:\n");
-	printf("                       'square'     Gives some pixe-ly feel. This is default.\n");
-	printf("                       'sine'       Standard synth organ-like timbre.\n");
-	printf("                       'saw'        Rich but rough sounding.\n");
-	printf("                       'triangle'   Rough texture but weak.\n");
-	printf("                       'violin'     A violin-like tone.\n");
-	printf("                       'customised' Customised wave. More information in '%s' file\n", ADDITIVE_FREQ_FILE);
+	printf("                       'square'           Gives some pixe-ly feel. This is default.\n");
+	printf("                       'sine'             Standard synth organ-like timbre.\n");
+	printf("                       'saw'              Rich but rough sounding.\n");
+	printf("                       'triangle'         Rough texture but weak.\n");
+	printf("                       'violin'           A violin-like tone.\n");
+	printf("                       'electronicvoice1' An attempt to synthesize a choir-CCA voice.\n");
+	printf("                       'customised'       Customised wave. More information in '%s' file\n", ADDITIVE_FREQ_FILE);
 	printf("       h | help      Displays this page and exits.\n\n");
 	printf("Note that a '%s' is also generated amongst the executables that contains some adjustable values.\n", SETTINGS_FILE);
 	printf("This file is read by all the sorting executables.\n");
@@ -2179,6 +2135,22 @@ static void print_time(double secs, int ncols) {
 		pnt_trunc_f("%dm %s", ncols, min, s < 10 ? "0" : "");
 	}
 	pnt_trunc_f("%fs", ncols, s);
+}
+
+static void print_mstime(mstime_t msecs, int ncols) {
+	unsigned long hour = ((unsigned long) msecs / 3600000) % 24;
+	unsigned long min = ((unsigned long) msecs / 60000) % 60;
+	double s = fmod((double) msecs / 1000.0, 60.0);
+	if (msecs >= 86400000) {
+		pnt_trunc_f("%lud %s", ncols, msecs / 86400000, hour < 10 ? "0" : "");
+	}
+	if (msecs >= 3600000) {
+		pnt_trunc_f("%luh %s", ncols, hour, min < 10 ? "0" : "");
+	}
+	if (msecs >= 60000) {
+		pnt_trunc_f("%lum %s", ncols, min, s < 10 ? "0" : "");
+	}
+	pnt_trunc_f("%.3fs", ncols, s);
 }
 
 static void print_time_long(time_t secs, int ncols) {
@@ -2555,8 +2527,10 @@ static char options[][31] = {
 	"tone_interval",
 	"shuffle_delay_factor",
 	"verify_delay_factor",
+	"use_precise_animation_time",
 	"print_estimated_real_time",
-	"show_version_build_number"
+	"show_version_build_number",
+	"enable_optimisations"
 };
 #define log_sound_hash 0x12f4a834
 #define default_delay_hash 0xc909cb65
@@ -2580,8 +2554,10 @@ static char options[][31] = {
 #define tone_interval_hash 0x73a95972
 #define shuffle_delay_factor_hash 0xc2929e51
 #define verify_delay_factor_hash 0x0c85cad1
+#define use_precise_animation_time_hash 0x671b5584
 #define print_estimated_real_time_hash 0x4617ef79
 #define show_version_build_number_hash 0x30d5c423
+#define enable_optimisations_hash 0x395ec803
 
 #define SHUFFLE_BUFFER_SIZE 31
 #define WAVE_SHAPE_BUFFER_SIZE 31
@@ -2610,7 +2586,7 @@ static int change_if_nzero(int n, const int original) {
 	return n;
 }
 
-static void parse_option(const char* option_name, const char* option_value, int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape) {
+static void parse_option(const char* option_name, const char* option_value, int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization) {
 	int opt_hash = dwhash(option_name);
 	switch (opt_hash) {
 	case log_sound_hash:
@@ -2691,11 +2667,17 @@ static void parse_option(const char* option_name, const char* option_value, int*
 	case verify_delay_factor_hash:
 		verify_delay_factor = fabs(atof(option_value));
 		return;
+	case use_precise_animation_time_hash:
+		print_precise_time = atoi(option_value);
+		return;
 	case print_estimated_real_time_hash:
 		print_estimated_real_time = atoi(option_value);
 		return;
 	case show_version_build_number_hash:
 		show_ver_no = atoi(option_value);
+		return;
+	case enable_optimisations_hash:
+		*use_optimization = atoi(option_value);
 		return;
 	}
 }
@@ -2712,7 +2694,7 @@ static void strip_spaces(char* s) {
 	*to_write = '\0';
 }
 
-#define print_spaces(n, f) for (size_t i = 0; i < (n); i++) {fputs(" ", (f));}
+#define print_spaces(n, f) for (size_t i = 0; i < (n); i++) {fputc(' ', (f));}
 
 static void create_options_file() {
 	FILE* opt = fopen(SETTINGS_FILE, "wb");
@@ -2788,19 +2770,27 @@ static void create_options_file() {
 	fprintf(opt, "%s = %f ; ", options[21], VERIFY_DELAY_FACTOR);
 	fprintf(opt, "The delay for the verify sort visualization relative to the sorting visualization delay.\n");
 	fprintf(opt, "\n");
-	fprintf(opt, "%s = %d ; ", options[22], PRINT_TIME_W_O_DELAY);
+	fprintf(opt, "%s = %d ; ", options[22], PRINT_PRECISE_TIME);
+	fprintf(opt, "0 = off, 1 = on. Displays 'Time taken' with millisecond precision.\n");
+	fprintf(opt, "%s = %d ; ", options[23], PRINT_TIME_W_O_DELAY);
 	fprintf(opt, "0 = off, 1 = on. When on it prints the estimated time without delay in the info below the visualization.\n");
 	fprintf(opt, "; The \"real time\" is estimated by taking the time for sorting and subtracting the delay times and the time taken to print the items on the screen.\n");
 	fprintf(opt, "; This is especially inaccurate for Windows. (We tried our best to make it accurate haish)\n");
 	fprintf(opt, "\n");
-	fprintf(opt, "%s = %d ; ", options[23], SHOW_VER);
+	fprintf(opt, "%s = %d ; ", options[24], SHOW_VER);
 	fprintf(opt, "0 = off, 1 = on. Whether you want the version / build number to show on the top right corner.\n");
+	fprintf(opt, "\n");
+	fprintf(opt, "%s = %d ; ", options[25], 1);
+	fprintf(opt, "0 = off, 1 = on. Optimise the terminal printing by reducing write syscalls. (Just keep this on)\n");
+	last_opt_char_count = strlen(options[25]) + 4 + 1;
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, "; This is done by collecting characters to print for each frame and then printing all of the collected characters in one print statement.\n");
 	fclose(opt);
 }
 
 #define READ_FILE_BUFFER 40
 
-static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape) {
+static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization) {
 	FILE* opt = fopen(SETTINGS_FILE, "r");
 	if (opt == NULL) {
 		create_options_file();
@@ -2827,7 +2817,7 @@ static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr
 		char* eq_chr = strchr(optln, '=');
 		if (eq_chr != NULL) {
 			*eq_chr = '\0';
-			parse_option(optln, eq_chr + 1, delay, arr_len, shuffle_type, chord_arg, wave_shape);
+			parse_option(optln, eq_chr + 1, delay, arr_len, shuffle_type, chord_arg, wave_shape, use_optimization);
 		}
 		while (!have_newline) {
 			fg_ret = fgets(optln, READ_FILE_BUFFER, opt);

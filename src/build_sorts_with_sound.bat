@@ -13,7 +13,7 @@ if not exist "pa\lib\.libs\libportaudio.dll.a" goto NO_LIBPA
 
 for /f "usebackq delims=" %%i in (build_list.txt) do (
     echo Building %%i.c
-    "%gcc_cmd%" -Wall -O2 -DDEFAULT_DIS_DELAY=10 -DACCOUNT_PRINT_LEN -DPRINT_TIME_W_O_DELAY=0 -DPA_INSTALLED -DVERSION="""1.0.0""" -DBUILD="""202207071838""" -DIS_SNAPSHOT=1 terminal_visualiser.c helper/precise_and_acc_time.c helper/beep_log.c helper/sound_player.c helper/anti_quicksort.c helper/ioext.c "%%i.c" -o "..\%%i" -L./pa/lib/.libs -I./pa/include -lportaudio
+    "%gcc_cmd%" -Wall -O2 -DDEFAULT_DIS_DELAY=10 -DACCOUNT_PRINT_LEN -DPRINT_TIME_W_O_DELAY=0 -DPA_INSTALLED -DVERSION="""1.0.0""" -DBUILD="""202207080147""" -DIS_SNAPSHOT=1 terminal_visualiser.c helper/precise_and_acc_time.c helper/beep_log.c helper/sound_player.c helper/anti_quicksort.c helper/ioext.c "%%i.c" -o "..\%%i" -L./pa/lib/.libs -I./pa/include -lportaudio
     @REM "%gcc_cmd%" -Wall -O2 terminal_visualiser.c "%%i.c" -o "..\%%i"
 )
 mkdir ..\sounds
