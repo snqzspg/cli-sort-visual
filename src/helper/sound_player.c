@@ -96,7 +96,67 @@ static harmonic_t violin[8] = {
 };
 static size_t nviolin_harmonics = 8;
 
-double additive_sine_wave_fx(double relative_phase);
+static harmonic_t smu_choir_voice_attempt_1[55] = {
+	{.rel_freq = 0.649519, .amp = 0.003056, .type = ADD_SINE},
+	{.rel_freq = 0.767308, .amp = 0.004584, .type = ADD_SINE},
+	{.rel_freq = 0.988999, .amp = 0.013710, .type = ADD_SINE},
+	{.rel_freq = 0.995915, .amp = 0.013452, .type = ADD_SINE},
+	{.rel_freq = 1.002831, .amp = 0.031798, .type = ADD_SINE},
+	{.rel_freq = 1.009747, .amp = 0.014274, .type = ADD_SINE},
+	{.rel_freq = 1.016663, .amp = 0.030486, .type = ADD_SINE},
+	{.rel_freq = 1.023579, .amp = 0.013271, .type = ADD_SINE},
+	{.rel_freq = 1.030495, .amp = 0.033351, .type = ADD_SINE},
+	{.rel_freq = 1.037411, .amp = 0.016819, .type = ADD_SINE},
+	{.rel_freq = 1.044328, .amp = 0.007251, .type = ADD_SINE},
+	{.rel_freq = 1.051244, .amp = 0.009671, .type = ADD_SINE},
+	{.rel_freq = 1.480040, .amp = 0.007814, .type = ADD_SINE},
+	{.rel_freq = 1.486956, .amp = 0.014778, .type = ADD_SINE},
+	{.rel_freq = 1.493872, .amp = 0.025100, .type = ADD_SINE},
+	{.rel_freq = 1.500789, .amp = 0.007324, .type = ADD_SINE},
+	{.rel_freq = 1.507705, .amp = 0.036106, .type = ADD_SINE},
+	{.rel_freq = 1.514621, .amp = 0.020659, .type = ADD_SINE},
+	{.rel_freq = 1.521537, .amp = 0.046488, .type = ADD_SINE},
+	{.rel_freq = 1.528453, .amp = 0.053091, .type = ADD_SINE},
+	{.rel_freq = 1.535369, .amp = 0.051171, .type = ADD_SINE},
+	{.rel_freq = 1.542285, .amp = 0.069092, .type = ADD_SINE},
+	{.rel_freq = 1.549201, .amp = 0.026946, .type = ADD_SINE},
+	{.rel_freq = 1.556117, .amp = 0.007201, .type = ADD_SINE},
+	{.rel_freq = 1.563033, .amp = 0.011751, .type = ADD_SINE},
+	{.rel_freq = 1.569949, .amp = 0.008829, .type = ADD_SINE},
+	{.rel_freq = 1.950333, .amp = 0.007087, .type = ADD_SINE},
+	{.rel_freq = 1.957250, .amp = 0.007817, .type = ADD_SINE},
+	{.rel_freq = 1.964166, .amp = 0.013938, .type = ADD_SINE},
+	{.rel_freq = 1.971082, .amp = 0.012078, .type = ADD_SINE},
+	{.rel_freq = 1.977998, .amp = 0.010420, .type = ADD_SINE},
+	{.rel_freq = 1.984914, .amp = 0.025996, .type = ADD_SINE},
+	{.rel_freq = 1.991830, .amp = 0.027465, .type = ADD_SINE},
+	{.rel_freq = 1.998746, .amp = 0.021018, .type = ADD_SINE},
+	{.rel_freq = 2.005662, .amp = 0.018810, .type = ADD_SINE},
+	{.rel_freq = 2.012578, .amp = 0.008683, .type = ADD_SINE},
+	{.rel_freq = 2.019494, .amp = 0.024113, .type = ADD_SINE},
+	{.rel_freq = 2.026410, .amp = 0.031529, .type = ADD_SINE},
+	{.rel_freq = 2.033326, .amp = 0.029438, .type = ADD_SINE},
+	{.rel_freq = 2.040242, .amp = 0.012434, .type = ADD_SINE},
+	{.rel_freq = 2.047159, .amp = 0.014449, .type = ADD_SINE},
+	{.rel_freq = 2.054075, .amp = 0.032149, .type = ADD_SINE},
+	{.rel_freq = 2.067907, .amp = 0.012434, .type = ADD_SINE},
+	{.rel_freq = 2.074823, .amp = 0.010978, .type = ADD_SINE},
+	{.rel_freq = 2.081739, .amp = 0.015143, .type = ADD_SINE},
+	{.rel_freq = 2.088655, .amp = 0.016774, .type = ADD_SINE},
+	{.rel_freq = 3.015409, .amp = 0.008014, .type = ADD_SINE},
+	{.rel_freq = 3.063822, .amp = 0.007132, .type = ADD_SINE},
+	{.rel_freq = 4.025156, .amp = 0.009734, .type = ADD_SINE},
+	{.rel_freq = 4.032072, .amp = 0.007943, .type = ADD_SINE},
+	{.rel_freq = 4.038988, .amp = 0.012105, .type = ADD_SINE},
+	{.rel_freq = 4.045905, .amp = 0.014873, .type = ADD_SINE},
+	{.rel_freq = 4.066653, .amp = 0.007045, .type = ADD_SINE},
+	{.rel_freq = 4.971154, .amp = 0.001129, .type = ADD_SINE},
+	{.rel_freq = 4.9375, .amp = 0.001196, .type = ADD_SINE}
+};
+static size_t n_smu_choir_voice_attempt_1_harmonics = 55;
+
+double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics);
+double custom_additive_sine_wave_fx(double relative_phase);
 static int process_harmonic_type(const char *s);
 
 /**
@@ -134,6 +194,7 @@ double triangle_wave_fx(double relative_phase) {
 }
 
 double violin_wave_fx(double relative_phase);
+double smu_choir_voice_attempt_1_wave_fx(double relative_phase);
 
 typedef double (*wavefx_t)(double);
 
@@ -153,8 +214,11 @@ wavefx_t get_wavefx(const char* arg_str) {
 	if (strcmp(arg_str, "violin") == 0) {
 		return violin_wave_fx;
 	}
-	if (strcmp(arg_str, "customised") == 0) {
-		return additive_sine_wave_fx;
+	if (strcmp(arg_str, "electronicvoice1") == 0) {
+		return smu_choir_voice_attempt_1_wave_fx;
+	}
+	if (strcmp(arg_str, "customised") == 0 || strcmp(arg_str, "customized") == 0) {
+		return custom_additive_sine_wave_fx;
 	}
 	return square_wave_fx;
 }
@@ -422,26 +486,26 @@ static int audreq_handle_tick(const void *input_buffer, void *output_buffer, uns
 
 #define strip_int(x) ((x) - (double) ((int) (x)))
 
-double additive_sine_wave_fx(double relative_phase) {
+double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics) {
 	double r = 0.0;
 	// assert that sum of all amplitudes = 1.0
-	for (size_t i = 0; i < additive_sines_count; i++) {
-		switch (additive_sines[i].type) {
+	for (size_t i = 0; i < nharmonics; i++) {
+		switch (harmonics[i].type) {
 			case ADD_COSINE:
-				r += cos(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += cos(relative_phase * (2 * 3.14159265 * harmonics[i].rel_freq)) * harmonics[i].amp;
 				break;
 			case ADD_TRIANGLE:
-				r += triangle_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += triangle_wave_fx(strip_int(relative_phase * harmonics[i].rel_freq)) * harmonics[i].amp;
 				break;
 			case ADD_SQUARE:
-				r += square_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += square_wave_fx(strip_int(relative_phase * harmonics[i].rel_freq)) * harmonics[i].amp;
 				break;
 			case ADD_SAW:
-				r += saw_wave_fx(strip_int(relative_phase * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += saw_wave_fx(strip_int(relative_phase * harmonics[i].rel_freq)) * harmonics[i].amp;
 				break;
 			case ADD_SINE:
 			default:
-				r += sin(relative_phase * (2 * 3.14159265 * additive_sines[i].rel_freq)) * additive_sines[i].amp;
+				r += sin(relative_phase * (2 * 3.14159265 * harmonics[i].rel_freq)) * harmonics[i].amp;
 				break;
 		}
 	}
@@ -454,28 +518,38 @@ double additive_sine_wave_fx(double relative_phase) {
 	return r;
 }
 
-double violin_wave_fx(double relative_phase) {
-	double r = 0.0;
-	// assert that sum of all amplitudes = 1.0
-	for (size_t i = 0; i < nviolin_harmonics; i++) {
-		switch (violin[i].type) {
-			case ADD_COSINE:
-				r += cos(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-				break;
-			case ADD_SINE:
-			default:
-				r += sin(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-				break;
-		}
-	}
-	if (r > 1.0) {
-		r = 1.0;
-	}
-	if (r < -1.0) {
-		r = -1.0;
-	}
-	return r;
+double custom_additive_sine_wave_fx(double relative_phase) {
+	return additive_sine_wave_fx(relative_phase, additive_sines, additive_sines_count);
 }
+
+double violin_wave_fx(double relative_phase) {
+	return additive_sine_wave_fx(relative_phase, violin, nviolin_harmonics);
+	// double r = 0.0;
+	// // assert that sum of all amplitudes = 1.0
+	// for (size_t i = 0; i < nviolin_harmonics; i++) {
+	// 	switch (violin[i].type) {
+	// 		case ADD_COSINE:
+	// 			r += cos(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
+	// 			break;
+	// 		case ADD_SINE:
+	// 		default:
+	// 			r += sin(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
+	// 			break;
+	// 	}
+	// }
+	// if (r > 1.0) {
+	// 	r = 1.0;
+	// }
+	// if (r < -1.0) {
+	// 	r = -1.0;
+	// }
+	// return r;
+}
+
+double smu_choir_voice_attempt_1_wave_fx(double relative_phase) {
+	return additive_sine_wave_fx(relative_phase, smu_choir_voice_attempt_1, n_smu_choir_voice_attempt_1_harmonics);
+}
+
 #define READ_FILE_BUFFER 40
 
 static int process_harmonic_type(const char *s) {
