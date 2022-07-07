@@ -154,5 +154,3 @@ To run the binaries, navigate up to the parent of the source folder and run the 
 If you type `./<sort_name> help` (or `<sort_name>.exe help`, replacing `<sort_name>` with any sort), you can get a somewhat comprehensive guide on how to adjust certain parameters. Note that except for the first option, you cannot skip any option when typing in the parameters. (Use default values if you don't want to change certain values, but want to do so for the options afterwards.)
 
 When you first run any sorting executables, it will generate a `settings.txt` file. Inside there are more settings that you can tweak to modify the behaviour of the visualizer.
-
-*The rest is to be written...*
