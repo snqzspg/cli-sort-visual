@@ -167,6 +167,24 @@ static int chord_no = I_chord;
 static int chord_progression_timing_ms = 2000;
 static int n_crotchets_in_bar = N_CROTCHETS_IN_BAR;
 
+#define ERROR_HANDLE_GO_AHEAD 0
+#define ERROR_HANDLE_WAIT 1
+#define ERROR_HANDLE_USER_IN 2
+
+#define error_pause(error_mode) switch (error_mode) { \
+case ERROR_HANDLE_WAIT: \
+	sleep_ms(5000); \
+	break; \
+case ERROR_HANDLE_USER_IN: \
+	printf("Press <enter> to continue... "); while (getchar() != '\n'); \
+	break; \
+case ERROR_HANDLE_GO_AHEAD: \
+default: \
+	break; \
+}
+
+static int error_handle_mode = ERROR_HANDLE_USER_IN;
+
 static const char* display_name = NULL;
 static time_t start_time = 0;
 static time_t vis_start_time = 0;
@@ -227,8 +245,8 @@ static void clear_screen_win32_init();
 static char *print_stdout_buffer = NULL;
 static int print_buffer_size = 0;
 
-static int buffer_set_sizing(int rows, int cols);
-static int buffer_optimize_init();
+static int buffer_set_sizing(int rows, int cols, unsigned char opt_level);
+static int buffer_optimize_init(unsigned char opt_level);
 static int buffer_optimize_cleanup(char force);
 
 // ========== End optimization functions breadcrumbs ==========
@@ -494,7 +512,9 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 	#ifdef PA_INSTALLED
 	if (maxamp > 0.0) {
 		play_sound = 1;
-		sound_player_init(maxamp, wave_type);
+		if (sound_player_init(maxamp, wave_type) != 0) {
+			error_pause(error_handle_mode);
+		}
 	}
 	#endif
 	for (int i = 0; i < arr_len; i++) {
@@ -513,7 +533,9 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 	chord_progression_timing_ms = get_chord_timing(delay);
 	read_chord_progression_from_file();
 	if (optimization_on) {
-		buffer_optimize_init();
+		if (buffer_optimize_init((unsigned char) optimization_on) != 0) {
+			error_pause(error_handle_mode);
+		}
 	}
 	ioext_init(pgcg_get_console_cols());
 
@@ -546,7 +568,9 @@ static int get_sort_status(int *d_array_clone, int array_len, const char optimiz
 	cpy_concat_sort_name(catprefix, sort_correct ? prefixtxt_success : prefixtxt_fail);
 	print_array_bars(catprefix, sort_correct ? NULL : display_array + incorrect_index, !sort_correct, sort_correct ? NULL : display_array + incorrect_index - 1, !sort_correct, 0);
 	if (optimization_on) {
-		buffer_optimize_cleanup(1);
+		if (buffer_optimize_cleanup(1) != 0) {
+			error_pause(error_handle_mode);
+		}
 	}
 	ioext_cleanup();
 	custom_progression_cleanup();
@@ -557,7 +581,9 @@ static int get_sort_status(int *d_array_clone, int array_len, const char optimiz
 	}
 	#ifdef PA_INSTALLED
 	if (max_sound_amplitude > 0.0) {
-		sound_player_cleanup();
+		if (sound_player_cleanup() != 0) {
+			error_pause(error_handle_mode);
+		}
 	}
 	#endif
 	return !sort_correct;
@@ -1855,36 +1881,40 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 
 // ========== Optimization functions ==========
 
-static int buffer_set_sizing(int rows, int cols) {
+static int buffer_set_sizing(int rows, int cols, unsigned char opt_level) {
 	fflush(stdout);
+	assert(opt_level != 0);
 	int ret = 0;
-	char *new_buffer = (char *) malloc(sizeof(char) * rows * cols);
+	char *new_buffer = (char *) malloc(sizeof(char) * rows * cols * opt_level);
 	if (new_buffer == NULL) {
 		perror("Set stdout buffer sizing failed");
+		error_pause(error_handle_mode);
 		return -1;
 	}
-	ret = setvbuf(stdout, new_buffer, _IOFBF, rows * cols);
+	ret = setvbuf(stdout, new_buffer, _IOFBF, rows * cols * opt_level);
 	if (ret != 0) {
 		free(new_buffer);
 		perror("Set stdout buffer sizing failed");
+		error_pause(error_handle_mode);
 		return ret;
 	}
-	print_buffer_size = rows * cols;
+	print_buffer_size = rows * cols * opt_level;
 	free(print_stdout_buffer);
 	print_stdout_buffer = new_buffer;
 	return ret;
 }
 
-static int buffer_optimize_init() {
+static int buffer_optimize_init(unsigned char opt_level) {
 	int rows = highest_item + non_array_lines + 1;
 	int cols = display_array_len + 1;
-	return buffer_set_sizing(rows, cols);
+	return buffer_set_sizing(rows, cols, opt_level);
 }
 
 static int buffer_optimize_cleanup(char force) {
 	int r = setvbuf(stdout, NULL, _IOLBF, 65536);
 	if (r != 0) {
 		perror("Cleanup failed");
+		error_pause(error_handle_mode);
 		if (!force) {
 			return r;
 		}
@@ -2530,7 +2560,8 @@ static char options[][31] = {
 	"use_precise_animation_time",
 	"print_estimated_real_time",
 	"show_version_build_number",
-	"enable_optimisations"
+	"optimisation_level",
+	"when_error"
 };
 #define log_sound_hash 0x12f4a834
 #define default_delay_hash 0xc909cb65
@@ -2557,7 +2588,8 @@ static char options[][31] = {
 #define use_precise_animation_time_hash 0x671b5584
 #define print_estimated_real_time_hash 0x4617ef79
 #define show_version_build_number_hash 0x30d5c423
-#define enable_optimisations_hash 0x395ec803
+#define optimisation_level_hash 0x334bc139
+#define when_error_hash 0x858ba183
 
 #define SHUFFLE_BUFFER_SIZE 31
 #define WAVE_SHAPE_BUFFER_SIZE 31
@@ -2676,8 +2708,19 @@ static void parse_option(const char* option_name, const char* option_value, int*
 	case show_version_build_number_hash:
 		show_ver_no = atoi(option_value);
 		return;
-	case enable_optimisations_hash:
+	case optimisation_level_hash:
 		*use_optimization = atoi(option_value);
+		return;
+	case when_error_hash:
+		if (strcmp(option_value, "go_ahead") == 0) {
+			error_handle_mode = ERROR_HANDLE_GO_AHEAD;
+		}
+		if (strcmp(option_value, "wait") == 0) {
+			error_handle_mode = ERROR_HANDLE_WAIT;
+		}
+		if (strcmp(option_value, "pause") == 0) {
+			error_handle_mode = ERROR_HANDLE_USER_IN;
+		}
 		return;
 	}
 }
@@ -2781,10 +2824,22 @@ static void create_options_file() {
 	fprintf(opt, "0 = off, 1 = on. Whether you want the version / build number to show on the top right corner.\n");
 	fprintf(opt, "\n");
 	fprintf(opt, "%s = %d ; ", options[25], 1);
-	fprintf(opt, "0 = off, 1 = on. Optimise the terminal printing by reducing write syscalls. (Just keep this on)\n");
+	fprintf(opt, "0 = No optimisations, 1 = Use optimisations. Optimise the terminal printing by reducing write syscalls. (Just keep this on level 1)\n");
 	last_opt_char_count = strlen(options[25]) + 4 + 1;
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, "; This is done by collecting characters to print for each frame and then printing all of the collected characters in one print statement.\n");
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, "; Level 2 - 127 is experimental, each level increases the memory usage.\n");
+	fprintf(opt, "\n");
+	fprintf(opt, "%s = %s ; ", options[26], "pause");
+	fprintf(opt, "How should errors be handled.\n");
+	last_opt_char_count = strlen(options[26]) + 8 + 1;
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, "; 'go_ahead' - Ignorable errors will be ignored and the app will continue, giving you little to no time for reading the errors.\n");
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, "; 'wait' - Error information will be displayed for 5 seconds before continuing.\n");
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, "; 'pause' - Pause the execution of the program until you hit enter.\n");
 	fclose(opt);
 }
 
@@ -3034,6 +3089,7 @@ static int read_chord_progression_from_file() {
 	return 0;
 read_chord_error:
 	fclose(opt);
+	error_pause(error_handle_mode);
 	return 1;
 }
 

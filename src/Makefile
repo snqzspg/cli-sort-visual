@@ -14,7 +14,7 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.0.0
-BUILD = 202207080147
+BUILD = 202207081710
 IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
@@ -106,6 +106,8 @@ ifeq ($(OS),Windows_NT)
     RMSNDSDIR = -rmdir /q ..\sounds
     ListAllCFiles = $(subst \,/,$(shell if exist $1 for %%i in ($1\*.c) do echo %%i))
     CPYWINDLL = if not exist ..\libportaudio-2.dll copy pa\lib\.libs\libportaudio-2.dll ..\libportaudio-2.dll
+    RUN_TESTS_SCRIPT_FILE = run_tests.bat
+    CPY_SCRIPT_FILE = if not exist ..\run_tests.bat copy scripts\run_tests.bat ..\run_tests.bat
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S), Linux)
@@ -123,6 +125,8 @@ else
         RMSNDSDIR = if [ -d ../sounds ] && [ -z "$$(ls -A ../sounds)" ]; then rm -d ../sounds; fi
         ListAllCFiles = $(shell if [ -d $1 ]; then find $1 -type f -name '*.c'; fi)
         CPYWINDLL = 
+        RUN_TESTS_SCRIPT_FILE = run_tests.bash
+        CPY_SCRIPT_FILE = if [ ! -f ../run_tests.bash ]; then cp scripts/run_tests.bash ../run_tests.bash; fi
     endif
     ifeq ($(UNAME_S),Darwin)
         RM = rm
@@ -139,6 +143,8 @@ else
         RMSNDSDIR = if [ -d ../sounds ] && [ -z "$$(ls -A ../sounds)" ]; then rm -d ../sounds; fi
         ListAllCFiles = $(shell if [ -d $1 ]; then find $1 -type f -name '*.c'; fi)
         CPYWINDLL = 
+        RUN_TESTS_SCRIPT_FILE = run_tests.bash
+        CPY_SCRIPT_FILE = if [ ! -f ../run_tests.bash ]; then cp scripts/run_tests.bash ../run_tests.bash; fi
     endif
 endif
 
@@ -269,10 +275,10 @@ custom_help:
 	@echo $(ECHOQUOT)to build all of the sorts.$(ECHOQUOT)
 	@echo$(ECHONOTHING)
 
-$(BINS): objs sounds $(TERM_VIS_OBJ_MUTE) $(HELPER_OBJS) $(OBJS) $(MAKE_WAV_BIN)
+$(BINS): objs sounds $(TERM_VIS_OBJ_MUTE) $(HELPER_OBJS) $(OBJS) $(MAKE_WAV_BIN) ../$(RUN_TESTS_SCRIPT_FILE)
 	$(LD) $(LDFLAGS) $(TERM_VIS_OBJ_MUTE) $(HELPER_OBJS) objs/$(@:../%=%.o) -o $@ $(LINKERFLAG)
 
-$(SOUND_BINS): objs sounds $(TERM_VIS_OBJ) $(HELPER_OBJS) $(HELPER_SOUND_OBJS) $(OBJS) libportaudio-2.dll $(MAKE_WAV_BIN)
+$(SOUND_BINS): objs sounds $(TERM_VIS_OBJ) $(HELPER_OBJS) $(HELPER_SOUND_OBJS) $(OBJS) libportaudio-2.dll $(MAKE_WAV_BIN) ../$(RUN_TESTS_SCRIPT_FILE)
 	$(LD) $(LDFLAGS) $(TERM_VIS_OBJ) $(HELPER_OBJS) $(HELPER_SOUND_OBJS) objs/$(@:../%_s=%.o) -o $(@:%_s=%) $(LINKERFLAG) $(W_SOUND_LINKERS)
 
 __wsound__add_sorts/%.c: objs $(TERM_VIS_OBJ) $(HELPER_OBJS) $(HELPER_SOUND_OBJS) $(patsubst add_sorts/%.c,objs/%.o,$(call ListAllCFiles,add_sorts)) libportaudio-2.dll
@@ -315,7 +321,10 @@ $(MAKE_WAV_BIN): $(MAKE_WAV_OBJ)
 $(MAKE_WAV_OBJ): $(MAKE_WAV_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@ $(LINKERFLAG)
 
-clean: clean_notice clean_all_notice $(CLEAN_BINS) $(patsubst add_sorts/%.c,../%_c,$(call ListAllCFiles,add_sorts)) $(MAKE_WAV_BIN_CLEAN) clean_libportaudio-2.dll clean_objs_1
+../$(RUN_TESTS_SCRIPT_FILE):
+	$(CPY_SCRIPT_FILE)
+
+clean: clean_notice clean_all_notice $(CLEAN_BINS) $(patsubst add_sorts/%.c,../%_c,$(call ListAllCFiles,add_sorts)) $(MAKE_WAV_BIN_CLEAN) clean_libportaudio-2.dll clean_$(RUN_TESTS_SCRIPT_FILE) clean_objs_1
 	@echo$(ECHONOTHING)
 	@echo $(ECHOQUOT)The generated binary and object files has been successfully cleaned!$(ECHOQUOT)
 
@@ -323,7 +332,7 @@ clean_objs: clean_notice clean_objs_notice clean_objs_1
 	@echo$(ECHONOTHING)
 	@echo $(ECHOQUOT)The generated object files has been successfully cleaned!$(ECHOQUOT)
 
-clean_bins: clean_notice clean_bins_notice $(CLEAN_BINS) $(patsubst add_sorts/%.c,../%_c,$(call ListAllCFiles,add_sorts)) $(MAKE_WAV_BIN_CLEAN) clean_libportaudio-2.dll
+clean_bins: clean_notice clean_bins_notice $(CLEAN_BINS) $(patsubst add_sorts/%.c,../%_c,$(call ListAllCFiles,add_sorts)) $(MAKE_WAV_BIN_CLEAN) clean_libportaudio-2.dll clean_$(RUN_TESTS_SCRIPT_FILE)
 	@echo$(ECHONOTHING)
 	@echo $(ECHOQUOT)The generated binary files has been successfully cleaned!$(ECHOQUOT)
 
@@ -404,4 +413,7 @@ $(MAKE_WAV_OBJ_CLEAN):
 	$(call rmiexist,$(@:%_d=%))
 
 clean_libportaudio-2.dll:
+	$(call rmiexist,$(@:clean_%=../%))
+
+clean_$(RUN_TESTS_SCRIPT_FILE):
 	$(call rmiexist,$(@:clean_%=../%))
