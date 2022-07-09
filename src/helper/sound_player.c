@@ -524,26 +524,6 @@ double custom_additive_sine_wave_fx(double relative_phase) {
 
 double violin_wave_fx(double relative_phase) {
 	return additive_sine_wave_fx(relative_phase, violin, nviolin_harmonics);
-	// double r = 0.0;
-	// // assert that sum of all amplitudes = 1.0
-	// for (size_t i = 0; i < nviolin_harmonics; i++) {
-	// 	switch (violin[i].type) {
-	// 		case ADD_COSINE:
-	// 			r += cos(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-	// 			break;
-	// 		case ADD_SINE:
-	// 		default:
-	// 			r += sin(relative_phase * (2 * 3.14159265 * violin[i].rel_freq)) * violin[i].amp;
-	// 			break;
-	// 	}
-	// }
-	// if (r > 1.0) {
-	// 	r = 1.0;
-	// }
-	// if (r < -1.0) {
-	// 	r = -1.0;
-	// }
-	// return r;
 }
 
 double smu_choir_voice_attempt_1_wave_fx(double relative_phase) {
