@@ -14,7 +14,7 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.0.0
-BUILD = 202207081710
+BUILD = 202207092333
 IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
@@ -89,6 +89,7 @@ MAKE_WAV_BIN = ../sounds/make_wav
 MAKE_WAV_BIN_CLEAN = $(MAKE_WAV_BIN:%=%_d)
 
 # https://stackoverflow.com/questions/714100/os-detecting-makefile
+# NOTE For MSYS2 comment out between here...
 ifeq ($(OS),Windows_NT)
     TERM_VIS_FLAGS = -DDEFAULT_DIS_DELAY=10 -DACCOUNT_PRINT_LEN -DPRINT_TIME_W_O_DELAY=0
 
@@ -111,6 +112,7 @@ ifeq ($(OS),Windows_NT)
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S), Linux)
+# ...and here.
         RM = rm
         rmiexist = if [ -f $1 ]; then rm $1; fi
         RMDIR = rm -d 
@@ -127,6 +129,7 @@ else
         CPYWINDLL = 
         RUN_TESTS_SCRIPT_FILE = run_tests.bash
         CPY_SCRIPT_FILE = if [ ! -f ../run_tests.bash ]; then cp scripts/run_tests.bash ../run_tests.bash; fi
+# NOTE For MSYS2 also comment out between here...
     endif
     ifeq ($(UNAME_S),Darwin)
         RM = rm
@@ -147,6 +150,7 @@ else
         CPY_SCRIPT_FILE = if [ ! -f ../run_tests.bash ]; then cp scripts/run_tests.bash ../run_tests.bash; fi
     endif
 endif
+# ...and here.
 
 HELPER_SRCS = helper/precise_and_acc_time.c \
 	helper/beep_log.c \

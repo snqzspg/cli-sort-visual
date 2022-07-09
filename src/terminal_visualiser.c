@@ -198,6 +198,9 @@ static char play_sound = 0;
 static char is_sorting = 0;
 static double delay_factor = 1.0;
 
+static int last_nrows = 80;
+static int last_ncols = 25;
+
 static unsigned long comparisons = 0;
 static char comparisons_overflow = 0;
 static unsigned long writes = 0;
@@ -537,7 +540,11 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 			error_pause(error_handle_mode);
 		}
 	}
-	ioext_init(pgcg_get_console_cols());
+
+	last_ncols = pgcg_get_console_cols();
+	last_nrows = pgcg_get_console_rows();
+
+	ioext_init(last_ncols);
 
 	clear_screen_(1);
 
@@ -696,16 +703,23 @@ static int process_args_2(char** __restrict__ chord_arg, double* __restrict__ am
 
 void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison, const void *p2, char is_p2_comparison, char in_progress) {
 	clock_t vt0 = clock();
-	clear_screen_(0);
+	int ncols = pgcg_get_console_cols();
+	int nrows = pgcg_get_console_rows();
+	if (last_ncols == ncols && last_nrows == nrows) {
+		clear_screen_(0);
+	} else {
+		last_ncols = ncols;
+		last_nrows = nrows;
+		clear_screen_(1);
+	}
 	int i1 = (p1 - (void*) display_array) / sizeof(int);
 	int i2 = (p2 - (void*) display_array) / sizeof(int);
-	int ncols = pgcg_get_console_cols();
 	int vislen = display_array_len < ncols - 1 ? display_array_len : ncols - 1;
 	if (prefix != NULL) {
 		// pnt_trunc_f("%s\n\n", ncols, prefix);
 		print_version_top_right(prefix, ncols);
 	}
-	int allowed_h = pgcg_get_console_rows() - non_array_lines;
+	int allowed_h = nrows - non_array_lines;
 	allowed_h = highest_item < allowed_h ? highest_item : allowed_h;
 	for (int i = allowed_h; i > 0; i--) {
 		for (int j = 0; j < vislen; j++) {
@@ -2625,7 +2639,7 @@ static void parse_option(const char* option_name, const char* option_value, int*
 		log_sound = atoi(option_value);
 		return;
 	case default_delay_hash:
-		*delay = change_if_nzero(atoi(option_value), *delay);
+		*delay = atoi(option_value);
 		return;
 	case default_nitems_hash:
 		*arr_len = change_if_nzero(atoi(option_value), *arr_len);
