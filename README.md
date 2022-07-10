@@ -2,6 +2,9 @@
 
 Sort for fun, sort of fun
 
+![demo_gif_1](https://user-images.githubusercontent.com/43104884/178152823-8c1da8e6-aeb8-44b2-aca5-4c283369a129.gif)<br>
+*(A visualization of Quick Sort)*
+
 ## A short description...
 
 When started the applications presents an array of numbers. Each integer is represented as a vertical bar to a certain height; larger numbers produces taller heights.
@@ -14,11 +17,16 @@ The number of comparisons and writes will be kept tracked of during the sorting 
 
 ## Contents
 
-1. [Building / Compiling from source](#building--compiling-from-source)
-    1. [Prerequisites](#prerequisites)
-    2. [GCC](#1-gcc)
+1. [Pre-compiled Binaries](#pre-compiled-binaries)
+    1. [Non-codesigned / Non-notarized executables (+ some lowkey rant)](#non-codesigned--non-notarized-executables--some-lowkey-rant)
+    2. [Getting around gatekeeping systems](#getting-around-gatekeeping-systems)
         1. [Windows](#windows)
         2. [macOS](#macos)
+2. [Building / Compiling from source](#building--compiling-from-source)
+    1. [Prerequisites](#prerequisites)
+    2. [GCC](#1-gcc)
+        1. [Windows](#windows-1)
+        2. [macOS](#macos-1)
         3. [Linux](#linux)
     3. [PortAudio](#2-portaudio)
         1. [Extra preparations for Windows (Installing MSYS2)](#extra-preparations-for-windows-installing-msys2)
@@ -31,7 +39,49 @@ The number of comparisons and writes will be kept tracked of during the sorting 
     4. [Building this project](#building-this-project)
         1. [Hooking up PortAudio](#hooking-up-portaudio)
         2. [Build instructions](#build-instructions)
-2. [Tweaking](#tweaking)
+3. [Tweaking](#tweaking)
+
+## Pre-compiled Binaries
+
+Binaries are the stuff you can directly run on the system (example `.exe` on Windows). For some operating systems, the pre-compiled executables are available to download and ready to run. 
+
+The applications can be downloaded from the [releases page](https://github.com/snqzspg/cli-sort-visual/releases).
+
+If the latest release does not contain a download that can be run on your system, you will have to build from the source code by [following the instructions below](#building--compiling-from-source).
+
+### Non-codesigned / Non-notarized executables (+ some lowkey rant)
+
+For small college-student style projects like this, it is not worth it to pay companies like Microsoft and Apple annual fees to codesign or notarize the executables. However, the operating systems will by default block these applications from running, and hints to users to make an association of those application with a possible malware.
+
+During the signing process, the companies will check the application through (presumably) an automated process for any suspicious behaviours. Then a certificate will be given to bundle with the application.
+
+While this is a very important protection system, **charging** for access for these services will hurt small hobbyist projects like this as people ended up thinking that the application is malicious. (I guess it's a fair sacrifice for a greater good in society)
+
+### Getting around gatekeeping systems
+
+**NOTE: Always make sure that you trust the executables before attempting to bypass the gatekeeping systems.**
+
+If you downloaded the binaries from this repository on github, rest assured that the function of the binaries is exactly the same function described by the source code. If this project binaries is found somewhere else, make sure you verify the hashes on the releases pages (Steps are there too!) before opening them. Despite the assurance, the only way for an average user to know if the binaries are trustable is to put on faith on the creator. If you would rather compile from the source code you can do so [in the next section](#building--compiling-from-source). 
+
+### Windows
+
+To bypass you need to click on the link on the dialog that says something on the line of "More info" and click "Run Anyways".
+
+### macOS
+
+To bypass first you need to locate the executable on Finder, then "right click" and select "Open". A dialog box will appear and the option to run the app should be there. It is recommended to close the application afterwards and re-run the application from the Terminal. 
+
+![gatekeeper-guide](https://user-images.githubusercontent.com/43104884/158795352-c50697a7-ee68-48be-b9e5-63409f9f631d.png)
+
+During this process a sounds folder and three `.txt` files, `chord_progression.txt`, `settings.txt` and `sound_frequencies.txt`, may appear in your Home folder. You can delete those once you've unblocked the executables. 
+
+Another way to enable the option to run is to
+
+1. Attempt to run the executable first
+2. Go to Settings and then Security & Privacy
+3. The text `"<sort_name>" was blocked from use because it is not from an identified developer` should appear.
+4. Click on the lock on the bottom left corner, unlock the setting and then click 'Open Anyway'
+5. Re-run the executable. The option to run it will appear on the dialog box.
 
 ## Building / Compiling from source
 
