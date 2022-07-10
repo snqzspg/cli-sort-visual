@@ -169,6 +169,8 @@ make
 
 to build PortAudio. The `bin` and `lib` folders will be created. (Enter `make clean` to undo.)
 
+*Note: For macOS users, if you encountered errors while building (that stops you from building PortAudio), you can try opening up the PortAudio's `Makefile` (**not this project's**) with a text editor, find `-Werror` and delete them. Then save the `Makefile` and run `make` again.*
+
 *Note: For linux users, if you encountered errors while building (that stops you from building PortAudio), if you see something along the lines of "recompile with -fPIC" in your error, you can try to re-configure PortAudio to use static linking instead (`./configure --enable-static --disable-shared`). You will then ensure that you adjust this project's `Makefile` according to [these instructions](#hooking-up-portaudio)*
 
 #### Testing PortAudio
@@ -204,10 +206,14 @@ If you want to statically link PortAudio to the final executables (no extra dlls
 For static linking,
 1. Open both the project `Makefile` and the PortAudio's `Makefile` with a text editor.
 2. Find the line in the PortAudio's `Makefile` that begins with `LIBS = `
-3. Copy everything after the equal sign
+   ![locate_linker_codes](https://user-images.githubusercontent.com/43104884/178150408-914ab41e-a555-43d5-b039-8779bbc51ad6.png)
+3. Copy everything after the equal sign (Note that the screenshot above is for an Arch Linux system. The code you have to copy will differ for Windows and macOS, but the location will remain the same.)
 4. In the project's `Makefile`, find the line that begins with `W_SOUND_LINKERS = `
+   ![paste_behind](https://user-images.githubusercontent.com/43104884/178150572-661600f3-717e-4623-b454-ac1116391e7e.png)
 5. Paste the copied code at the end of the line. Ensure that there is a space separating the existing code with your pasted one.
+   ![pasted_code](https://user-images.githubusercontent.com/43104884/178150628-35e85b3b-95a0-455f-98de-d882908a58d4.png)
 6. If there is `-lm` within the pasted code, remove `-lm`.
+   ![delete_lm](https://user-images.githubusercontent.com/43104884/178150584-06decca0-cc2c-4f6d-8b95-fccc108ae85c.png)
 7. [Windows MSYS2 Only] Find **two** sections of code that are encased with the folloing comments:
 
 ```
@@ -215,7 +221,7 @@ For static linking,
 <a bunch of code here>
 # ...and here.
 ```
-[Windows MSYS2 Only] Comment them out by adding a pound / hash `#` sign at the front of every line in between. (And yes you have to build this project with MSYS2 terminal too!)
+[Windows MSYS2 Only] Comment them out by adding a pound / hash `#` sign at the front of every line of code in between the aformentioned comments. (And yes you have to build this project with MSYS2 terminal too!)
 
 #### Build instructions
 
