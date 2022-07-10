@@ -21,9 +21,13 @@ The number of comparisons and writes will be kept tracked of during the sorting 
         2. [macOS](#macos)
         3. [Linux](#linux)
     3. [PortAudio](#2-portaudio)
-        1. [Windows](#windows-1)
-        2. [macOS](#macos-1)
-        3. [Linux](#linux-1)
+        1. [Extra preparations for Windows (Installing MSYS2)](#extra-preparations-for-windows-installing-msys2)
+        2. [Extra preparations for Linux systems (Installing ASLA)](#extra-preparations-for-linux-systems-installing-asla)
+            1. [Using provided package manager](#using-provided-package-manager)
+            2. [Install from website](#install-from-website)
+        3. [Building PortAudio](#building-portaudio)
+        4. [Testing PortAudio](#testing-portaudio)
+        5. [Dynamic library on macOS](#dynamic-library-on-macos)
     4. [Building](#building)
 2. [Tweaking](#tweaking)
 
@@ -77,27 +81,99 @@ sudo apt install build-essential
 
 ### 2. PortAudio
 
-PortAudio is a library that is used to play sounds on different Operating Systems.
+PortAudio is a library that is used to play sounds on different Operating Systems. It is required to create a version of the visualizer with sound.
 
-#### Windows
+#### Extra preparations for Windows (Installing MSYS2)
 
-For Windows, you will need to install MSYS. Download from [MSYS2](https://www.msys2.org/) website and follow the instructions. 
+For Windows, you will need to install MSYS to build PortAudio. MSYS2 is a bash terminal that allows one to use bash scripts to configure their makefiles. You can download MSYS2 from [MSYS2](https://www.msys2.org/) website and follow the instructions. 
 
-You will need to install either `mingw-w64-x86_64-toolchain` (64-bit) or `mingw-w64-i686-toolchain`(32-bit) using pacman
+After installing, you will need to install either `mingw-w64-x86_64-toolchain` (64-bit) or `mingw-w64-i686-toolchain`(32-bit) using `pacman`
 
-For PortAudio, download the source code from [PortAudio website](http://www.portaudio.com/) or [PortAudio GitHub](https://github.com/PortAudio/portaudio), then follow the instructions on [this page](https://github.com/PortAudio/portaudio/wiki/Notes_about_building_PortAudio_with_MinGW).
+Once everything is installed and updated, you can go ahead and [build PortAudio] (#building-portaudio), using MSYS2 MINGWXX (**NOT MSYS**) terminal instead of your typical CMD.
 
-#### macOS
+#### Extra preparations for Linux systems (Installing ASLA)
 
-You can download the source code from [PortAudio website](http://www.portaudio.com/) or [PortAudio GitHub](https://github.com/PortAudio/portaudio).
+*Note: If you already have ALSA or `libasound` on your system, you can skip this extra preparation.*
 
-For simple building, you can open the extracted folder in a terminal and enter
+For linux distros, PortAudio strongly recommends installing Advanced Linux Sound Architecture (ALSA) project to interface with the sound system on different distros. There are a couple of ways to do this.
+
+##### Using provided package manager
+
+You can install ALSA library using the command line package manager provided by the distro. The library name could be `libasound-dev`. Example for debian-based systems (including Ubuntu and its derivatives):
 
 ```
-./configure && make
+sudo apt-get install libasound-dev
 ```
 
-to start building. This creates a file called `libportaudio.2.dylib` inside the hidden folder `lib/.libs/`. You will need to copy the file to the `/usr/local/lib/` folder. You can use the command below to do so:
+##### Install from website
+
+You can download `alsa-lib` compressed tarball from [ALSA's website](https://www.alsa-project.org/wiki/Main_Page) and extract its contents. Example:
+
+```
+tar zxvf alsa-lib-1.2.7.2.tar.bz2
+```
+
+Using command line, navigate to the extracted folder (using `cd`) and enter (for default)
+
+```
+./configure
+```
+
+or (for static linking)
+
+```
+./configure --enable-shared=no --enable-static=yes
+```
+
+Then enter the following command to install:
+
+```
+make install
+```
+
+or
+
+```
+sudo make install
+```
+
+if extra permissions are needed.
+
+#### Building PortAudio
+
+For PortAudio, download the source code from [PortAudio website](http://www.portaudio.com/) or [PortAudio GitHub](https://github.com/PortAudio/portaudio).
+
+Then extract and navigate to the folder of the extracted contents using the bash/zsh command line (for Windows use MSYS2 MINGWXX) (using `cd`). Firstly enter 
+
+```
+./configure
+```
+
+to configure the build files. The above command produces a dynamic library at the end, which on some systems you will have to manually copy the library file to certain locations (more on this below). For a static configuration (you may not need to copy the libraries, but you will have to copy part of a script):
+
+```
+./configure --enable-static --disable-shared
+```
+
+*([Optional] For Windows, you can build using directsound using `./configure --with-winapi=directx`; further build instructions can be found on [this page](https://github.com/PortAudio/portaudio/wiki/Notes_about_building_PortAudio_with_MinGW).)*
+
+After the process completes, you can simply type
+
+```
+make
+```
+
+to build PortAudio. The `bin` and `lib` folders will be created. (Enter `make clean` to undo.)
+
+#### Testing PortAudio
+
+**Lower the volume of your device before trying out the following step.**
+
+To test the sound playing property of your built PortAudio, enter `bin/paex_sine` or `bin/paex_saw`. The command will cause your device to play a sine-wave or a saw-wave sound respectively.
+
+#### Dynamic library on macOS
+
+In your PortAudio folder the building process creates a file called `libportaudio.2.dylib` inside the hidden folder `lib/.libs/`. You will need to copy the file to the `/usr/local/lib/` folder. You can use the command below to do so:
 
 ```
 sudo cp lib/.libs/libportaudio.2.dylib /usr/local/lib
@@ -108,12 +184,6 @@ and the command below to undo it (plus deleting it from the desktop):
 ```
 sudo mv /usr/local/lib/libportaudio.2.dylib ~/Desktop
 ```
-
-#### Linux
-
-As of the making of this Markdown file (5th July 2022) the [portaudio site](http://www.portaudio.com/) is down. The only page available is [https://github.com/PortAudio/portaudio/wiki/Platforms_Linux](https://github.com/PortAudio/portaudio/wiki/Platforms_Linux).
-
-The site that has the guide to compiling PortAudio for Linux systems is [here](http://portaudio.com/docs/v19-doxydocs/compile_linux.html).
 
 ### Building
 
