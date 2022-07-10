@@ -14,7 +14,7 @@ The number of comparisons and writes will be kept tracked of during the sorting 
 
 ## Contents
 
-1. [Building (or "Installing")](#a-short-description)
+1. [Building / Compiling from source](#building--compiling-from-source)
     1. [Prerequisites](#prerequisites)
     2. [GCC](#1-gcc)
         1. [Windows](#windows)
@@ -28,12 +28,14 @@ The number of comparisons and writes will be kept tracked of during the sorting 
         3. [Building PortAudio](#building-portaudio)
         4. [Testing PortAudio](#testing-portaudio)
         5. [Dynamic library on macOS](#dynamic-library-on-macos)
-    4. [Building](#building)
+    4. [Building this project](#building-this-project)
+        1. [Hooking up PortAudio](#hooking-up-portaudio)
+        2. [Build instructions](#build-instructions)
 2. [Tweaking](#tweaking)
 
-## Building (or "Installing")
+## Building / Compiling from source
 
-Currently there are no binaries available to download, so you may have to do some code compiling yourself.
+In this section are the instructions to produce the executable binaries from the source code.
 
 ### Prerequisites
 
@@ -83,17 +85,19 @@ sudo apt install build-essential
 
 PortAudio is a library that is used to play sounds on different Operating Systems. It is required to create a version of the visualizer with sound.
 
+If you want to build a mute version withoud sound, you can [skip ahead to building this project](#building-this-project). If you want a sound (or musical) version, you have to prepare PortAudio.
+
 #### Extra preparations for Windows (Installing MSYS2)
 
 For Windows, you will need to install MSYS to build PortAudio. MSYS2 is a bash terminal that allows one to use bash scripts to configure their makefiles. You can download MSYS2 from [MSYS2](https://www.msys2.org/) website and follow the instructions. 
 
 After installing, you will need to install either `mingw-w64-x86_64-toolchain` (64-bit) or `mingw-w64-i686-toolchain`(32-bit) using `pacman`
 
-Once everything is installed and updated, you can go ahead and [build PortAudio] (#building-portaudio), using MSYS2 MINGWXX (**NOT MSYS**) terminal instead of your typical CMD.
+Once everything is installed and updated, you can go ahead and [build PortAudio](#building-portaudio), using MSYS2 MINGWXX (**NOT MSYS**) terminal instead of your typical CMD.
 
 #### Extra preparations for Linux systems (Installing ASLA)
 
-*Note: If you already have ALSA or `libasound` on your system, you can skip this extra preparation.*
+*Note: If you already have ALSA or `libasound` on your system, you can [skip this extra preparation](#building-portaudio).*
 
 For linux distros, PortAudio strongly recommends installing Advanced Linux Sound Architecture (ALSA) project to interface with the sound system on different distros. There are a couple of ways to do this.
 
@@ -149,7 +153,7 @@ Then extract and navigate to the folder of the extracted contents using the bash
 ./configure
 ```
 
-to configure the build files. The above command produces a dynamic library at the end, which on some systems you will have to manually copy the library file to certain locations (more on this below). For a static configuration (you may not need to copy the libraries, but you will have to copy part of a script):
+to configure the build files. The above command produces a dynamic library at the end, which on some systems you will have to manually copy the library file to certain locations (NOTE for Windows the Makefile is configured to automatically do this for you, but for macOS, [more on this below](#dynamic-library-on-macos)). For a static configuration (you may not need to copy the libraries, but you will have to copy part of a script):
 
 ```
 ./configure --enable-static --disable-shared
@@ -164,6 +168,8 @@ make
 ```
 
 to build PortAudio. The `bin` and `lib` folders will be created. (Enter `make clean` to undo.)
+
+*Note: For linux users, if you encountered errors while building (that stops you from building PortAudio), if you see something along the lines of "recompile with -fPIC" in your error, you can try to re-configure PortAudio to use static linking instead (`./configure --enable-static --disable-shared`). You will then ensure that you adjust this project's `Makefile` according to [these instructions](#hooking-up-portaudio)*
 
 #### Testing PortAudio
 
@@ -185,13 +191,35 @@ and the command below to undo it (plus deleting it from the desktop):
 sudo mv /usr/local/lib/libportaudio.2.dylib ~/Desktop
 ```
 
-### Building
+### Building this project
 
 Finally, after getting the required tools and libraries, you can now build the visualizer.
 
+#### Hooking up PortAudio
+
 Firstly, if you have successfully built PortAudio, you can copy the `include` and the `lib` folder to the `src/pa` folder.
 
-Then, you can download (clone) this repository by download the zip and extracting into a folder, or using
+If you want to statically link PortAudio to the final executables (no extra dlls required in the final executables), you have to modify the project `Makefile`. If you use dynamic linking (a.k.a. the default setting) you can just jump ahead to [Build instructions](#build-instructions).
+
+For static linking,
+1. Open both the project `Makefile` and the PortAudio's `Makefile` with a text editor.
+2. Find the line in the PortAudio's `Makefile` that begins with `LIBS = `
+3. Copy everything after the equal sign
+4. In the project's `Makefile`, find the line that begins with `W_SOUND_LINKERS = `
+5. Paste the copied code at the end of the line. Ensure that there is a space separating the existing code with your pasted one.
+6. If there is `-lm` within the pasted code, remove `-lm`.
+7. [Windows MSYS2 Only] Find **two** sections of code that are encased with the folloing comments:
+
+```
+# NOTE For MSYS2 comment out between here...
+<a bunch of code here>
+# ...and here.
+```
+[Windows MSYS2 Only] Comment them out by adding a pound / hash `#` sign at the front of every line in between. (And yes you have to build this project with MSYS2 terminal too!)
+
+#### Build instructions
+
+You can download (clone) this repository by download the zip and extracting into a folder, or using
 
 ```
 git clone https://github.com/snqzspg/cli-sort-visual makeshift_visualizer
@@ -211,11 +239,11 @@ if you managed to have PortAudio, or
 make nosound
 ```
 
-to build a mute version. (For Windows with MinGW64 replace `make` with `mingw32-make` or `mingw64-make`, or drag the `mingw32-make.exe` file into the console).
+to build a mute version. (For Windows with MinGW64, under default settings / not statically linked, replace `make` with `mingw32-make` or `mingw64-make`, or drag the `mingw32-make.exe` file into the console).
 
 You can simply type `make` to get some information about the installation process, including how to clean up.
 
-This project does not leave any remnants on your system. You can delete the entire project folder and it's gone.
+This project does not leave any remnants on your system (less the dependencies). You can delete the entire project folder and it's gone.
 
 To run the binaries, navigate up to the parent of the source folder and run the executable labelled with the sort names.
 
