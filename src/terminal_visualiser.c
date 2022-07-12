@@ -11,6 +11,7 @@
 #include "helper/beep_log.h"
 #include "helper/anti_quicksort.h"
 #include "helper/ioext.h"
+#include "helper/triangular_input.h"
 
 #ifdef PA_INSTALLED
 #include "helper/sound_player.h"
@@ -1577,6 +1578,72 @@ static void final_radix_pass() {
 	}
 }
 
+static void cross_weave_1() {
+	int len1 = display_array_len / 2 + 1;
+	int len2 = display_array_len - len1;
+	int tmp_arr1[len1];
+	int tmp_arr2[len2];
+	assert(len2 <= len1);
+	for (int i = 0; i < len1; i++) {
+		tmp_arr1[i] = display_array[i];
+		mark_aux_array_write();
+		print_array_bars("Weaving", &(display_array[i]), 0, NULL, 0, 1);
+	}
+	for (int i = 0, j = len2 - 1; i < len2; i++, j--) {
+		tmp_arr2[i] = display_array[j + len1];
+		mark_aux_array_write();
+		print_array_bars("Weaving", &(display_array[j + len1]), 0, NULL, 0, 1);
+		assert(j >= 0);
+		assert(j < len2);
+	}
+	int i1 = 0;
+	for (int i = 0; i < len1; i++) {
+		display_array[i1] = tmp_arr1[i];
+		mark_array_write();
+		print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+		i1++;
+		if (i < len2) {
+			display_array[i1] = tmp_arr2[i];
+			mark_array_write();
+			print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+			i1++;
+		}
+	}
+}
+
+static void cross_weave_2() {
+	int len1 = display_array_len / 2 + 1;
+	int len2 = display_array_len - len1;
+	int tmp_arr1[len1];
+	int tmp_arr2[len2];
+	assert(len2 <= len1);
+	for (int i = 0, j = len1 - 1; i < len1; i++, j--) {
+		tmp_arr1[i] = display_array[j];
+		mark_aux_array_write();
+		print_array_bars("Weaving", &(display_array[j]), 0, NULL, 0, 1);
+		assert(j >= 0);
+		assert(j < len1);
+	}
+	for (int i = 0; i < len2; i++) {
+		tmp_arr2[i] = display_array[i + len1];
+		mark_aux_array_write();
+		print_array_bars("Weaving", &(display_array[i + len1]), 0, NULL, 0, 1);
+	}
+	int i1 = 0;
+	for (int i = 0; i < len1; i++) {
+		display_array[i1] = tmp_arr1[i];
+		mark_array_write();
+		print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+		i1++;
+		if (i < len2) {
+			display_array[i1] = tmp_arr2[i];
+			mark_array_write();
+			print_array_bars("Weaving", &(display_array[i1]), 0, NULL, 0, 1);
+			i1++;
+		}
+	}
+}
+
 static void perform_selected_shuffle(const char* term, int* idendical_array, int actual_len) {
 	if (term == NULL || strcmp(term, "random") == 0) {
 		shuffle_display_array();
@@ -1638,7 +1705,9 @@ static void perform_selected_shuffle(const char* term, int* idendical_array, int
 		return;
 	}
 	if (strcmp(term, "antiquicksort") == 0) {
-		antiqsort_v(display_array, display_array_len, idendical_array, actual_len);
+		if (antiqsort_v(display_array, display_array_len, idendical_array, actual_len) < 0) {
+			error_pause(error_handle_mode);
+		}
 		return;
 	}
 	if (strcmp(term, "halfreverse") == 0) {
@@ -1669,9 +1738,23 @@ static void perform_selected_shuffle(const char* term, int* idendical_array, int
 		final_radix_pass();
 		return;
 	}
+	if (strcmp(term, "crossweave1") == 0) {
+		cross_weave_1();
+		return;
+	}
+	if (strcmp(term, "crossweave2") == 0) {
+		cross_weave_2();
+		return;
+	}
+	if (strcmp(term, "triangular") == 0) {
+		if (triangular_shuffle(display_array, display_array_len, idendical_array, actual_len, &highest_item) != 0) {
+			error_pause(error_handle_mode);
+		}
+		return;
+	}
 }
 
-char shuffle_names[][25] = {
+char shuffle_names[][38] = {
 	"randomly shuffled",
 	"reversed",
 	"no shuffle",
@@ -1694,7 +1777,10 @@ char shuffle_names[][25] = {
 	"shuffled odds",
 	"shuffled evens",
 	"final bitonic pass",
-	"final radix pass"
+	"final radix pass",
+	"cross weave - higher half descending",
+	"cross weave - lower half descending",
+	"triangular input"
 };
 
 static char* get_shuffle_display_name(const char* term) {
@@ -1766,6 +1852,15 @@ static char* get_shuffle_display_name(const char* term) {
 	}
 	if (strcmp(term, "radixpass") == 0) {
 		return shuffle_names[22];
+	}
+	if (strcmp(term, "crossweave1") == 0) {
+		return shuffle_names[23];
+	}
+	if (strcmp(term, "crossweave2") == 0) {
+		return shuffle_names[24];
+	}
+	if (strcmp(term, "triangular") == 0) {
+		return shuffle_names[25];
 	}
 	return shuffle_names[2];
 }
@@ -1840,6 +1935,9 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("                       'shuffleodds'      Shuffle only the odd numbers.\n");
 	printf("                       'shuffleevens'     Shuffle only the even numbers.\n");
 	printf("                       'radixpass'        Put the first half and second half elements next to each other.\n");
+	printf("                       'crossweave1'      Put the first half and second half elements next to each other, with the second half in reverse.\n");
+	printf("                       'crossweave2'      Put the first half and second half elements next to each other, with the first half in reverse.\n");
+	printf("                       'triangular'       [Experimental] Generates a triangular input.\n");
 	for (size_t i = 0; i < nvis_args; i++) {
 		if (vis_args[i].should_parse) {
 			assert(vis_args[i].name != NULL);
