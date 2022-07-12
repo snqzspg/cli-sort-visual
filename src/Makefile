@@ -13,9 +13,9 @@ NO_NCURSES_FLAGS = -DNO_NCURSES
 W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
-VERSION = 1.0
-BUILD = 202207092333
-IS_SNAPSHOT=0
+VERSION = 1.1
+BUILD = 202207120450
+IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
 DBUILD_FLAGS = -DBUILD=\"$(BUILD)\"
@@ -155,7 +155,8 @@ endif
 HELPER_SRCS = helper/precise_and_acc_time.c \
 	helper/beep_log.c \
 	helper/anti_quicksort.c \
-	helper/ioext.c
+	helper/ioext.c \
+	helper/triangular_input.c
 HELPER_OBJS = $(HELPER_SRCS:helper/%.c=objs/%.o)
 CLEAN_HELPER_OBJS = $(HELPER_SRCS:helper/%.c=objs/%.o_d)
 
