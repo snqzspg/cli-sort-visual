@@ -15,11 +15,7 @@ static int *num_counts = NULL;
 static int num_counts_len = 0;
 
 #define record_int_write(n) mark_aux_array_write(); \
-print_array_bars("Generating triangular input", da_start + (n), 0, NULL, 0, 1); //\
-num_counts[n]++; \
-if (highest_number < (n)) { \
-	highest_number = n; \
-}
+print_array_bars("Generating triangular input", da_start + (n), 0, NULL, 0, 1)
 
 static size_t get_n_numbers_in_sequence_i(int i) {
 	return 1 << i;
@@ -99,11 +95,31 @@ int triangular_shuffle(int *display_array, int display_array_len, int *clone_arr
 	da_start = display_array;
 
 	int triangular_sequence[triangular_sequence_size];
-	size_t actual_size = write_triangular_sequence(triangular_sequence, sequence_no);
-	assert(actual_size == triangular_sequence_size);
+	int tmparr_buff[display_array_len];
+	int *tmparr = tmparr_buff;
+
+	int len_left = display_array_len;
+
+	for (int seq_c = 1; seq_c <= sequence_no; seq_c++) {
+		size_t n_generated = write_triangular_sequence(triangular_sequence, seq_c);
+
+		if (n_generated >= len_left) {
+			for (int i = 0; i < len_left; i++) {
+				tmparr[i] = triangular_sequence[i] + seq_c;
+				mark_aux_array_write();
+			}
+			break;
+		}
+
+		for (int i = 0; i < n_generated; i++) {
+			tmparr[i] = triangular_sequence[i] + seq_c;
+			mark_aux_array_write();
+		}
+		tmparr += n_generated;
+	}
 
 	for (int i = 0; i < display_array_len; i++) {
-		display_array[i] = triangular_sequence[i] + 1;
+		display_array[i] = tmparr[i];
 		mark_array_write();
 		print_array_bars("Generating triangular input", display_array + i, 0, NULL, 0, 1);
 		num_counts[display_array[i]]++;
