@@ -1,3 +1,7 @@
+/**
+ * Triangular input sequences from https://oeis.org/A294648
+ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,46 +100,69 @@ int triangular_shuffle(int *display_array, int display_array_len, int *clone_arr
 
 	int triangular_sequence[triangular_sequence_size];
 	int tmparr_buff[display_array_len];
+	int tmparr_buff2[display_array_len];
 	int *tmparr = tmparr_buff;
 
 	int len_left = display_array_len;
+	// int highest_n = 0;
 
 	for (int seq_c = 1; seq_c <= sequence_no; seq_c++) {
 		size_t n_generated = write_triangular_sequence(triangular_sequence, seq_c);
 
 		if (n_generated >= len_left) {
 			for (int i = 0; i < len_left; i++) {
-				tmparr[i] = triangular_sequence[i] + seq_c;
+				tmparr[i] = triangular_sequence[i];
 				mark_aux_array_write();
+				num_counts[tmparr[i]]++;
+				// if (highest_n < tmp_arr[i]) {
+				// 	highest_n = tmp_arr[i];
+				// }
 			}
 			break;
 		}
 
 		for (int i = 0; i < n_generated; i++) {
-			tmparr[i] = triangular_sequence[i] + seq_c;
+			tmparr[i] = triangular_sequence[i];
 			mark_aux_array_write();
+			num_counts[tmparr[i]]++;
+			// if (highest_n < tmp_arr[i]) {
+			// 	highest_n = tmp_arr[i];
+			// }
 		}
 		tmparr += n_generated;
 	}
 
-	for (int i = 0; i < display_array_len; i++) {
-		display_array[i] = tmparr[i];
-		mark_array_write();
-		print_array_bars("Generating triangular input", display_array + i, 0, NULL, 0, 1);
-		num_counts[display_array[i]]++;
-		if (*highest_item < display_array[i]) {
-			*highest_item = display_array[i];
+	int i1 = 0;
+
+	for (int i = 0; i < num_counts_len; i++) {
+		if (num_counts[i] <= 0) {
+			continue;
+		}
+		for (int j = 0; j < display_array_len; j++) {
+			if (tmparr_buff[j] == i) {
+				tmparr_buff2[j] = display_array[i1];
+				i1++;
+			}
 		}
 	}
 
-	int i1 = 0;
-	for (int i = 0; i < clone_arr_len; i++) {
-		while (num_counts[i1] <= 0) {
-			i1++;
-		}
-		clone_arr[i] = i1;
-		num_counts[i1]--;
+	for (int i = 0; i < display_array_len; i++) {
+		display_array[i] = tmparr_buff2[i];
+		mark_array_write();
+		print_array_bars("Generating triangular input", display_array + i, 0, NULL, 0, 1);
+		// if (*highest_item < display_array[i]) {
+		// 	*highest_item = display_array[i];
+		// }
 	}
+
+	// i1 = 0;
+	// for (int i = 0; i < clone_arr_len; i++) {
+	// 	while (num_counts[i1] <= 0) {
+	// 		i1++;
+	// 	}
+	// 	clone_arr[i] = i1;
+	// 	num_counts[i1]--;
+	// }
 
 	free(num_counts);
 	num_counts = NULL;
