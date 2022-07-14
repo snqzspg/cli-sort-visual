@@ -45,7 +45,11 @@ then
 	sleep 1;
 	"./$sort" "$delay" "$number" shuffleodds;
 	sleep 1;
+	"./$sort" "$delay" "$number" crossweave1;
+	sleep 1;
 	"./$sort" "$delay" "$number" circlepass;
 	sleep 1;
 	"./$sort" "$delay" "$number" sortedheapinput;
+	sleep 1;
+	"./$sort" "$delay" "$number" triangular;
 fi

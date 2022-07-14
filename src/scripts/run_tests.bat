@@ -39,8 +39,12 @@ timeout /t 1 > NUL
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" shuffleodds
 timeout /t 1 > NUL
+"%sort%" "%delay%" "%number%" crossweave1
+timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" circlepass
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" sortedheapinput
+timeout /t 1 > NUL
+"%sort%" "%delay%" "%number%" triangular
 
 :END

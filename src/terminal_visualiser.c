@@ -1747,9 +1747,7 @@ static void perform_selected_shuffle(const char* term, int* idendical_array, int
 		return;
 	}
 	if (strcmp(term, "triangular") == 0) {
-		if (triangular_shuffle(display_array, display_array_len, idendical_array, actual_len, &highest_item) != 0) {
-			error_pause(error_handle_mode);
-		}
+		triangular_shuffle(display_array, display_array_len);
 		return;
 	}
 }
@@ -1937,7 +1935,7 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("                       'radixpass'        Put the first half and second half elements next to each other.\n");
 	printf("                       'crossweave1'      Put the first half and second half elements next to each other, with the second half in reverse.\n");
 	printf("                       'crossweave2'      Put the first half and second half elements next to each other, with the first half in reverse.\n");
-	printf("                       'triangular'       [Experimental] Generates a triangular input.\n");
+	printf("                       'triangular'       Generates a \"triangular\" input.\n");
 	for (size_t i = 0; i < nvis_args; i++) {
 		if (vis_args[i].should_parse) {
 			assert(vis_args[i].name != NULL);

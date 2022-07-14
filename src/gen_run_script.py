@@ -57,9 +57,10 @@ shuffle_patterns = [
 	'halfreverse',
 	'reverseevens',
 	'shuffleodds',
-	'reversequarters',
+	'crossweave1',
 	'circlepass',
-	'sortedheapinput'
+	'sortedheapinput',
+	'triangular'
 ]
 
 def create_bash():
