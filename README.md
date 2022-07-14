@@ -2,6 +2,8 @@
 
 Sort for fun, sort of fun
 
+The classic bleep-bloop thing in computer science.
+
 ![demo_gif_1](https://user-images.githubusercontent.com/43104884/178152823-8c1da8e6-aeb8-44b2-aca5-4c283369a129.gif)<br>
 *(A visualization of Quick Sort)*
 
