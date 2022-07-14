@@ -14,7 +14,7 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.1
-BUILD = 202207122231
+BUILD = 202207130111
 IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
@@ -180,7 +180,7 @@ version:
 	@echo $(ECHOQUOT)#                                          #$(ECHOQUOT)
 	@echo $(ECHOQUOT)#     Snqzs' PG CLI Sorting Visualizer     #$(ECHOQUOT)
 	@echo $(ECHOQUOT)#        Sort for fun, sort of fun         #$(ECHOQUOT)
-	@echo $(ECHOQUOT)#    Version $(VERSION) (Build $(BUILD))    #$(ECHOQUOT)
+	@echo $(ECHOQUOT)#     Version $(VERSION) (Build $(BUILD))     #$(ECHOQUOT)
 	@echo $(ECHOQUOT)#                                          #$(ECHOQUOT)
 	@echo $(ECHOQUOT)############################################$(ECHOQUOT)
 
