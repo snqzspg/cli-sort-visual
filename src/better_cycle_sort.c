@@ -24,7 +24,7 @@ void cycle_sort(void *list, size_t nitems, size_t size, int (*compr)(const void*
 		char holding_item[size];
 		memcpy_v(holding_item, list + cycle_start * size, size);
 		size_t pos = cycle_start;
-		char sorted = 1;
+		char sorted = compr(list + (pos + 1) * size, list + pos * size)>= 0;
 		for (size_t i = cycle_start + 1; i < nitems; i++) {
 			if (compr(list + i * size, holding_item) < 0) {
 				pos++;
