@@ -117,6 +117,10 @@
 #define SHOW_VER 1
 #endif
 
+#ifndef SHOW_BUILD
+#define SHOW_BUILD 0
+#endif
+
 static int bar_display_delay = DEFAULT_DIS_DELAY;
 
 static int *display_array = NULL;
@@ -157,6 +161,7 @@ static double tuning_freq = TUNING_FREQ;
 static char use_eq_temp = USE_EQ_TEMP;
 static char display_full_bar = DISPLAY_FULL_BAR;
 static char show_ver_no = SHOW_VER;
+static char show_build_no = SHOW_BUILD;
 
 #define CHORD_MODE_OFF 0
 #define CHORD_MODE_NOTE 1
@@ -2327,10 +2332,15 @@ static void print_version_top_right(const char *prefix, int ncols) {
 	#if defined(IS_SNAPSHOT) && defined(VERSION) && defined(BUILD)
 		char is_snapshot = IS_SNAPSHOT;
 		char version[] = VERSION;
-		char ver_pref[strlen(version) + 2];
+		char build[] = BUILD;
+		char ver_pref[strlen(version) + 1 + 8 + strlen(build) + 2];
 		strcpy(ver_pref, "v");
 		strcat(ver_pref, version);
-		char build[] = BUILD;
+		if (show_build_no) {
+			strcat(ver_pref, " (Build ");
+			strcat(ver_pref, build);
+			strcat(ver_pref, ")");
+		}
 		char build_pref[strlen(build) + 7];
 		strcpy(build_pref, "Build ");
 		strcat(build_pref, build);
@@ -2670,6 +2680,7 @@ static char options[][31] = {
 	"use_precise_animation_time",
 	"print_estimated_real_time",
 	"show_version_build_number",
+	"show_build_number",
 	"optimisation_level",
 	"when_error"
 };
@@ -2698,6 +2709,7 @@ static char options[][31] = {
 #define use_precise_animation_time_hash 0x671b5584
 #define print_estimated_real_time_hash 0x4617ef79
 #define show_version_build_number_hash 0x30d5c423
+#define show_build_number_hash 0xba37a7fc
 #define optimisation_level_hash 0x334bc139
 #define when_error_hash 0x858ba183
 
@@ -2818,6 +2830,9 @@ static void parse_option(const char* option_name, const char* option_value, int*
 	case show_version_build_number_hash:
 		show_ver_no = atoi(option_value);
 		return;
+	case show_build_number_hash:
+		show_build_no = atoi(option_value);
+		return;
 	case optimisation_level_hash:
 		*use_optimization = atoi(option_value);
 		return;
@@ -2932,18 +2947,20 @@ static void create_options_file() {
 	fprintf(opt, "\n");
 	fprintf(opt, "%s = %d ; ", options[24], SHOW_VER);
 	fprintf(opt, "0 = off, 1 = on. Whether you want the version / build number to show on the top right corner.\n");
+	fprintf(opt, "%s = %d ; ", options[25], SHOW_BUILD);
+	fprintf(opt, "0 = off, 1 = on. Whether you want the build number to show on the top right corner along with the release version.\n");
 	fprintf(opt, "\n");
-	fprintf(opt, "%s = %d ; ", options[25], 1);
+	fprintf(opt, "%s = %d ; ", options[26], 1);
 	fprintf(opt, "0 = No optimisations, 1 = Use optimisations. Optimise the terminal printing by reducing write syscalls. (Just keep this on level 1)\n");
-	last_opt_char_count = strlen(options[25]) + 4 + 1;
+	last_opt_char_count = strlen(options[26]) + 4 + 1;
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, "; This is done by collecting characters to print for each frame and then printing all of the collected characters in one print statement.\n");
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, "; Level 2 - 127 is experimental, each level increases the memory usage.\n");
 	fprintf(opt, "\n");
-	fprintf(opt, "%s = %s ; ", options[26], "pause");
+	fprintf(opt, "%s = %s ; ", options[27], "pause");
 	fprintf(opt, "How should errors be handled.\n");
-	last_opt_char_count = strlen(options[26]) + 8 + 1;
+	last_opt_char_count = strlen(options[27]) + 8 + 1;
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, "; 'go_ahead' - Ignorable errors will be ignored and the app will continue, giving you little to no time for reading the errors.\n");
 	print_spaces(last_opt_char_count, opt);
