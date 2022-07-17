@@ -710,7 +710,7 @@ static void strip_spaces(char* s) {
 static void normalize_harmonics(harmonic_t* __restrict__ harmonics, size_t nharmonics) {
 	double sum_amp = 0.0;
 	for (size_t i = 0; i < nharmonics; i++) {
-		sum_amp += harmonics[i].amp;
+		sum_amp += fabs(harmonics[i].amp);
 	}
 	for (size_t i = 0; i < nharmonics; i++) {
 		harmonics[i].amp /= sum_amp;
