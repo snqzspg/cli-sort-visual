@@ -9,6 +9,69 @@
 #include "../terminal_visualiser.h"
 #include "triangular_input.h"
 
+/**
+ * Yeah at the end had to borrow from https://github.com/Gaming32/ArrayV/blob/main/src/main/java/io/github/arrayv/utils/Shuffles.java
+ */
+void triangular_shuffle(int *display_array, int display_array_len) {
+	int triangle[display_array_len];
+
+	for (int i = 0; i < display_array_len; i++) {
+		triangle[i] = 0;
+	}
+
+	int j = 0, k = 2;
+	int max = 0;
+
+	for (int i = 1; i < display_array_len; i++, j++) {
+		if (i == k) {
+			j = 0;
+			k <<= 1;
+		}
+		triangle[i] = triangle[j] + 1;
+		if (triangle[i] > max) {
+			max = triangle[i];
+		}
+	}
+
+	assert(max < display_array_len);
+
+	int counts_len = max + 1;
+	int counts[counts_len];
+
+	for (int i = 0; i < counts_len; i++) {
+		counts[i] = 0;
+	}
+
+	for (int i = 0; i < display_array_len; i++) {
+		assert(triangle[i] < counts_len);
+		counts[triangle[i]]++;
+	}
+
+	for (int i = 1; i < counts_len; i++) {
+		counts[i] += counts[i - 1];
+	}
+
+	for (int i = display_array_len; i > 0; i--) {
+		assert(triangle[i - 1] < counts_len);
+		triangle[i - 1] = --counts[triangle[i - 1]];
+	}
+
+	int temp[display_array_len];
+	for (int i = 0; i < display_array_len; i++) {
+		assert(triangle[i] < display_array_len);
+		temp[i] = display_array[triangle[i]];
+		mark_aux_array_write();
+		print_array_bars("Generating triangular input", display_array + triangle[i], 0, NULL, 0, 1);
+	}
+	for (int i = 0; i < display_array_len; i++) {
+		display_array[i] = temp[i];
+		mark_array_write();
+		print_array_bars("Generating triangular input", display_array + i, 0, NULL, 0, 1);
+	}
+}
+
+// ================ Older attempt ================
+
 // static const int *da_start = NULL;
 // static const int *da_end;
 // static int *da_ptr;
@@ -169,64 +232,3 @@ print_array_bars("Generating triangular input", da_start + (n), 0, NULL, 0, 1)*/
 // 	num_counts_len = 0;
 // 	return 0;
 // }
-
-/**
- * Yeah at the end had to borrow from https://github.com/Gaming32/ArrayV/blob/main/src/main/java/io/github/arrayv/utils/Shuffles.java
- */
-void triangular_shuffle(int *display_array, int display_array_len) {
-	int triangle[display_array_len];
-
-	for (int i = 0; i < display_array_len; i++) {
-		triangle[i] = 0;
-	}
-
-	int j = 0, k = 2;
-	int max = 0;
-
-	for (int i = 1; i < display_array_len; i++, j++) {
-		if (i == k) {
-			j = 0;
-			k *= 2;
-		}
-		triangle[i] = triangle[j] + 1;
-		if (triangle[i] > max) {
-			max = triangle[i];
-		}
-	}
-
-	assert(max < display_array_len);
-
-	int counts_len = max + 1;
-	int counts[counts_len];
-
-	for (int i = 0; i < counts_len; i++) {
-		counts[i] = 0;
-	}
-
-	for (int i = 0; i < display_array_len; i++) {
-		assert(triangle[i] < counts_len);
-		counts[triangle[i]]++;
-	}
-
-	for (int i = 1; i < counts_len; i++) {
-		counts[i] += counts[i - 1];
-	}
-
-	for (int i = display_array_len; i > 0; i--) {
-		assert(triangle[i - 1] < counts_len);
-		triangle[i - 1] = --counts[triangle[i - 1]];
-	}
-
-	int temp[display_array_len];
-	for (int i = 0; i < display_array_len; i++) {
-		assert(triangle[i] < display_array_len);
-		temp[i] = display_array[triangle[i]];
-		mark_aux_array_write();
-		print_array_bars("Generating triangular input", display_array + triangle[i], 0, NULL, 0, 1);
-	}
-	for (int i = 0; i < display_array_len; i++) {
-		display_array[i] = temp[i];
-		mark_array_write();
-		print_array_bars("Generating triangular input", display_array + i, 0, NULL, 0, 1);
-	}
-}
