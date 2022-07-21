@@ -2740,14 +2740,51 @@ static int change_if_nzero(int n, const int original) {
 	return n;
 }
 
+static char is_valid_float(const char *s) {
+	if (s == NULL) {
+		return 0;
+	}
+	if (*s == 45) {
+		s++;
+	}
+	if (*s == 46) {
+		s++;
+	}
+	return *s >= 48 && *s < 58;
+}
+
+static char is_valid_int(const char *s) {
+	if (s == NULL) {
+		return 0;
+	}
+	if (*s == 45) {
+		s++;
+	}
+	return *s >= 48 && *s < 58;
+}
+
+static int change_if_valid(const char* s, const int original) {
+	if (!is_valid_int(s)) {
+		return original;
+	}
+	return atoi(s);
+}
+
+static double change_if_valid_float(const char* s, const double original) {
+	if (!is_valid_float(s)) {
+		return original;
+	}
+	return atof(s);
+}
+
 static void parse_option(const char* option_name, const char* option_value, int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization) {
 	int opt_hash = dwhash(option_name);
 	switch (opt_hash) {
 	case log_sound_hash:
-		log_sound = atoi(option_value);
+		log_sound = change_if_valid(option_value, log_sound);
 		return;
 	case default_delay_hash:
-		*delay = atoi(option_value);
+		*delay = change_if_valid(option_value, *delay);
 		return;
 	case default_nitems_hash:
 		*arr_len = change_if_nzero(atoi(option_value), *arr_len);
@@ -2779,22 +2816,22 @@ static void parse_option(const char* option_name, const char* option_value, int*
 		*wave_shape = wave_shape_buffer;
 		return;
 	case max_sound_amplitude_hash:
-		max_sound_amplitude = clamp_f(atof(option_value), 0.0, 1.0);
+		max_sound_amplitude = clamp_f(change_if_valid_float(option_value, max_sound_amplitude), 0.0, 1.0);
 		return;
 	case tone_lower_cent_bound_hash:
-		tone_lower_cent_bound = atoi(option_value);
+		tone_lower_cent_bound = change_if_valid(option_value, tone_lower_cent_bound);
 		return;
 	case tone_upper_cent_bound_hash:
-		tone_upper_cent_bound = atoi(option_value);
+		tone_upper_cent_bound = change_if_valid(option_value, tone_upper_cent_bound);
 		return;
 	case chord_start_semitone_hash:
-		chord_start_semitone = atoi(option_value);
+		chord_start_semitone = change_if_valid(option_value, chord_start_semitone);
 		return;
 	case chord_octave_range_hash:
-		chord_octave_range = atoi(option_value);
+		chord_octave_range = change_if_valid(option_value, chord_octave_range);
 		return;
 	case ideal_crotchet_dur_hash:
-		ideal_crotchet_dur = atoi(option_value);
+		ideal_crotchet_dur = change_if_valid(option_value, ideal_crotchet_dur);
 		return;
 	case crotchets_in_bar_hash:
 		n_crotchets_in_bar = change_if_nzero(atoi(option_value), n_crotchets_in_bar);
