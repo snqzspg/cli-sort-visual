@@ -20,6 +20,39 @@
 
 // ========== Sound player breadcrumbs ==========
 
+/*
+ * Explanation:
+ * The audio is managed using a "request" and "service" system.
+ * There will be two threads running in parallel: the main thread (that also tanks the visualiser), 
+ * and the audio thread. The latter requests instructions for the next 256 positions the speakers should
+ * position at periodically. It works very similar to a wav file, but store floats between 0.0 and 1.0
+ * instead of Signed 16-bit / 32-bit PCM.
+ *
+ * Initially the audio thread will start out as idle, not producing any sound. When the main thread decides
+ * that it is time for sound to be produced, it will send a "request". The main thread will first set 
+ * is_sending_1 to 1 (true) to let audio thread know that main is sending a request. Main will then set the
+ * request_fperiod_1 to the period of the required tone (= 1/frequency), as well as the number of complete
+ * waveforms the speaker should produce. Main then sets request_received_1 to 0 to tell audio thread that
+ * there's new request available. It then set is_sending_1 to 0 (false) which signals audio thread that the
+ * request sending is complete.
+ *
+ * The audio thread will only read from the request when it has completed one full wave shape. This is to
+ * minimize the clicking noise that one may hear because of a sudden drop in air pressure due to a halfway
+ * cutting of a sound wave. It will then check the request_received_1 property. If it is true, audio thread
+ * will treat it as no new request, otherwise, it will first set is_receiving_1 to 1 (true), then copy
+ * request_fperiod_1 into serving_fperiod_1, and request_wave_count_1 into waves_left_1. This will
+ * overwrite the current tone it is serving. This enable the tones to be actively interrupted as the
+ * visualizer advances to a new bar. The audio thread then sets request_received_1 to 1 (true), and then
+ * is_receiving_1 to 0 (false).
+ *
+ * When is_receiving_1 is set to 1 (true), the main thread will enter into a spin-lock (infinite while loop)
+ * until the is_receiving_1 is set to 0 (false). This is to prevent corruption in the request as the audio
+ * thread is copying the request.
+ *
+ * The process described above in _1 is also true in _2, replacing all _1(s) with _2(s). This means that
+ * this sound system can play up to two tones at once.
+ */
+
 typedef struct {
 	float serving_fperiod_1;
 	int waves_left_1;
