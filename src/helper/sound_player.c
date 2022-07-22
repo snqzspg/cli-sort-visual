@@ -629,7 +629,7 @@ static void create_wave_file() {
 	fprintf(opt, "; Each sound will have one base frequency and multiple harmonic frequencies.\n");
 	fprintf(opt, "; The base frequency should have the lowest frequency and the highest amplitude.\n");
 	fprintf(opt, "; If the harmonic frequencies harmonise with one another, the resulting sound is tonal, and you can tell which note it is playing (If you have perfect pitch maybe?)\n");
-	fprintf(opt, "; If they don't harmonise with one another, the resulting sound is atonal, and you cannot tell which note it is playing.\n\n");
+	fprintf(opt, "; If they don't harmonise with one another, the resulting sound is atonal, and you can't tell which note it is playing.\n\n");
 	fprintf(opt, "; In this file, each line is considered as a base frequency or a harmonic frequency.\n");
 	fprintf(opt, "; For each line, there will be three values, seperated by commas:\n");
 	fprintf(opt, ";  1. The first value is the relative frequency to the base frequency. If the base frequency is 100Hz, a value of 2.0 corresponds to 200Hz.\n");
@@ -647,7 +647,7 @@ static void create_wave_file() {
 	fprintf(opt, "; WARNING: Before you go ahead and run one of the sorts with your customization, you might want to consider lowering the upper bound of the tone or lowering your volume.\n");
 	fprintf(opt, ";          This is because loud and high frequencies can be uncomfortable and can accelerate the damage to your hearing.\n");
 	fprintf(opt, "; DISPLAIMER: Snqzs' PG will NOT be responsible for any hearing damage caused by the usage of our software. We have provided ample warning.\n\n");
-	fprintf(opt, "; Below are some frequencies found on the internet that produces different sounds. Unfortunately these information is not easily found.\n");
+	fprintf(opt, "; Below are some frequencies found on the internet that produces different sounds. Unfortunately these information are not easily found.\n");
 	fprintf(opt, "; The frequencies are not perfect imitations, so they sound kinda \"chiptune-like\", which is kinda cool tbh.\n");
 	fprintf(opt, "; You can uncomment them by removing the semicolons befor them.\n");
 	fprintf(opt, "; Remember to comment out the example above as well! If not it will get mixed in.\n\n");

@@ -12,6 +12,7 @@
 #include "helper/anti_quicksort.h"
 #include "helper/ioext.h"
 #include "helper/triangular_input.h"
+#include "helper/smooth_heapify.h"
 
 #ifdef PA_INSTALLED
 #include "helper/sound_player.h"
@@ -1755,6 +1756,12 @@ static void perform_selected_shuffle(const char* term, int* idendical_array, int
 		triangular_shuffle(display_array, display_array_len);
 		return;
 	}
+	if (strcmp(term, "smoothheapified") == 0) {
+		reverse_display_array();
+		clear_screen_(1);
+		smooth_heapify(display_array, display_array_len);
+		return;
+	}
 }
 
 char shuffle_names[][38] = {
@@ -1783,7 +1790,8 @@ char shuffle_names[][38] = {
 	"final radix pass",
 	"cross weave - higher half descending",
 	"cross weave - lower half descending",
-	"triangular input"
+	"triangular input",
+	"smooth heapified"
 };
 
 static char* get_shuffle_display_name(const char* term) {
@@ -1865,6 +1873,9 @@ static char* get_shuffle_display_name(const char* term) {
 	if (strcmp(term, "triangular") == 0) {
 		return shuffle_names[25];
 	}
+	if (strcmp(term, "smoothheapified") == 0) {
+		return shuffle_names[26];
+	}
 	return shuffle_names[2];
 }
 
@@ -1915,28 +1926,29 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("       nitems        [Optional] The number of items in the array. Default is %d.\n", DEFAULT_ARR_LEN);
 	printf("       shuffle_mode  [Optional] The shuffle before sorting. Default is 'random'.\n");
 	printf("                     The possible values are:\n");
-	printf("                       'random'           Shuffle randomly. This is default.\n");
-	printf("                       'reverse'          Reverse the array.\n");
-	printf("                       'halfreverse'      Reverse the array halfway.\n");
-	printf("                       'reverseodds'      Reverse the odd numbers.\n");
-	printf("                       'reverseevens'     Reverse the even numbers.\n");
+	printf("                       'random'           Shuffles randomly. This is default.\n");
+	printf("                       'reverse'          Reverses the array.\n");
+	printf("                       'halfreverse'      Reverses the array halfway.\n");
+	printf("                       'reverseodds'      Reverses the odd numbers.\n");
+	printf("                       'reverseevens'     Reverses the even numbers.\n");
 	printf("                       'noshuffle'        The array is already sorted.\n");
 	printf("                       'slightshuffle'    Shuffles array slightly.\n");
 	printf("                       'shuffletail'      Divides the array into 3:1 section and shuffles the smaller section at the back.\n");
 	printf("                       'shufflehead'      Divides the array into 1:3 section and shuffles the smaller section at the front.\n");
 	printf("                       'mergepass'        Divides the array into 1:1 section.\n");
 	printf("                       'reversemergepass' Divides the array into 1:1 section and reverses the array.\n");
-	printf("                       'heapified'        Perform heapify on the array.\n");
-	printf("                       'circlepass'       Shuffles randomly, then performs a first pass of circle sort.\n");
+	printf("                       'heapified'        Performs heapify on the array.\n");
+	printf("                       'smoothheapified'  Reverses and performs Leonardo heapify on the array.\n");
 	printf("                       'sortedheapinput'  Similar to heapified, but each hirachy is sorted.\n");
+	printf("                       'circlepass'       Shuffles randomly, then performs a first pass of circle sort.\n");
 	printf("                       'antiquicksort'    Quick sort killer adversary input.\n");
 	printf("                       'quarters'         Divites the array into 1:1:1:1 sections.\n");
 	printf("                       'reversequarters'  Divites the array into 1:1:1:1 sections and reverses the array.\n");
 	printf("                       'binarysearchtree' Generates a binary search tree from the input, and places remaining elements at the back.\n");
 	printf("                       'mountain'         Front half ascending, back half descending.\n");
 	printf("                       'bitonicpass'      Front half descending, back half ascending.\n");
-	printf("                       'shuffleodds'      Shuffle only the odd numbers.\n");
-	printf("                       'shuffleevens'     Shuffle only the even numbers.\n");
+	printf("                       'shuffleodds'      Shuffles only the odd numbers.\n");
+	printf("                       'shuffleevens'     Shuffles only the even numbers.\n");
 	printf("                       'radixpass'        Put the first half and second half elements next to each other.\n");
 	printf("                       'crossweave1'      Put the first half and second half elements next to each other, with the second half in reverse.\n");
 	printf("                       'crossweave2'      Put the first half and second half elements next to each other, with the first half in reverse.\n");
@@ -1968,7 +1980,7 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("                       'majorscale'          The tone interval increases according to a major scale (Key set in chord_start_semitone in settings.txt).\n");
 	printf("                       'minorscale'          The tone interval increases according to a neutral minor scale (Key set in chord_start_semitone in settings.txt).\n");
 	printf("                       'melodicminorscale'   The tone interval increases according to a melodic minor scale (Key set in chord_start_semitone in settings.txt).\n");
-	printf("                       'harmonicminorscale'  The tone interval increases according to a melodic minor scale (Key set in chord_start_semitone in settings.txt).\n");
+	printf("                       'harmonicminorscale'  The tone interval increases according to a harmonic minor scale (Key set in chord_start_semitone in settings.txt).\n");
 	printf("                       'chord'               Defaults to 'chord_i' below.\n");
 	printf("                       'chord_i'-'chord_vii' The tone interval increases by arpeggios of the respective major chord interval.\n");
 	printf("                       'chord_min_i' -       The tone interval increases by arpeggios of the respective minor chord interval.\n");
@@ -1986,7 +1998,7 @@ static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_
 	printf("                       'customised'       Customised wave. More information in '%s' file\n", ADDITIVE_FREQ_FILE);
 	printf("       h | help      Displays this page and exits.\n\n");
 	printf("Note that a '%s' is also generated amongst the executables that contains some adjustable values.\n", SETTINGS_FILE);
-	printf("This file is read by all the sorting executables.\n");
+	printf("This file is read by all of the sorting executables.\n");
 	printf("Some of the settings in the files are repeated here, and they take the same values as stated above.\n");
 	printf("Note that the arguments passed in will override the settings stated in the '%s' file.\n\n", SETTINGS_FILE);
 	printf("Can't see everything? You can try logging the message into a file using './<sort_name> help>log.txt'. Then open with your favourite text editor (like VIM)!\n\n");
