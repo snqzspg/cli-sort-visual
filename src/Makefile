@@ -14,7 +14,7 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.1
-BUILD = 202207180145
+BUILD = 202207200235
 IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
@@ -97,6 +97,7 @@ ifeq ($(OS),Windows_NT)
     rmiexist = if exist $(subst /,\,$1) del $(subst /,\,$1)
     RMDIR = rmdir
     mkdir = if not exist $(subst /,\,$1) mkdir $(subst /,\,$1)
+    cpyinexist = if not exist $(subst /,\,$2) copy $(subst /,\,$1) $(subst /,\,$2)
     FixPath = $(subst /,\,$1)
     ECHOQUOT = 
     ESCAMP = ^
@@ -117,6 +118,7 @@ else
         rmiexist = if [ -f $1 ]; then rm $1; fi
         RMDIR = rm -d 
         mkdir = if [ ! -d $1 ]; then mkdir -p $1; fi
+        cpyinexist = if [ ! -f $2 ]; then cp $1 $2; fi
         FixPath = $1
         ECHOQUOT = "
         ESCAMP = 
@@ -136,6 +138,7 @@ else
         rmiexist = if [ -f $1 ]; then rm $1; fi
         RMDIR = rm -d 
         mkdir = if [ ! -d $1 ]; then mkdir -p $1; fi
+        cpyinexist = if [ ! -f $2 ]; then cp $1 $2; fi
         FixPath = $1
         ECHOQUOT = "
         ESCAMP = 
@@ -156,7 +159,8 @@ HELPER_SRCS = helper/precise_and_acc_time.c \
 	helper/beep_log.c \
 	helper/anti_quicksort.c \
 	helper/ioext.c \
-	helper/triangular_input.c
+	helper/triangular_input.c\
+	helper/smooth_heapify.c
 HELPER_OBJS = $(HELPER_SRCS:helper/%.c=objs/%.o)
 CLEAN_HELPER_OBJS = $(HELPER_SRCS:helper/%.c=objs/%.o_d)
 
@@ -164,7 +168,14 @@ HELPER_SOUND_SRCS = helper/sound_player.c
 HELPER_SOUND_OBJS = $(HELPER_SOUND_SRCS:helper/%.c=objs/%.o)
 CLEAN_HELPER_SOUND_OBJS = $(HELPER_SOUND_SRCS:helper/%.c=objs/%.o_d)
 
-.PHONY = all version prerequisites to_build cleanup withsound nosound build_done_msg custom_notice copy_binaries_notice custom_help objs $(BINS) clean $(CLEAN_BINS) $(CLEAN_BIN_OS)
+PA_WIN_DYLIB = libportaudio-2.dll
+PA_WIN_DYLIB_DEST = ../$(PA_WIN_DYLIB)
+PA_MAC_DYLIB = libportaudio.2.dylib
+PA_MAC_DYLIB_DEST = /usr/local/lib/$(PA_MAC_DYLIB)
+PA_LINUX_DYLIB = 
+PA_LINUX_DYLIB_DEST = 
+
+.PHONY = all version prerequisites to_build cleanup withsound nosound build_done_msg custom_notice copy_binaries_notice custom_help objs $(BINS) clean $(CLEAN_BINS) $(CLEAN_BIN_OS) install_mac_pa_dylib uninstall_mac_pa_dylib
 
 all: version prerequisites to_build cleanup
 	@echo$(ECHONOTHING)
@@ -260,6 +271,17 @@ copy_binaries_notice:
 	@echo$(ECHONOTHING)
 	@echo $(ECHOQUOT)FOR WINDOWS: You will need to copy your MSYS' 'libgcc_s_dw2-1.dll' to the same location as the binaries if you built PortAudio with directx.$(ECHOQUOT)
 	@echo $(ECHOQUOT)FOR macOS: You may need to copy lib/.lib/libportaudio.2.dylib file into your /usr/local/lib/ folder.$(ECHOQUOT)
+	@echo $(ECHOQUOT)      NEW: You can now type 'sudo make install_mac_pa_dylib' to automatically copy the library to the lib folder.$(ECHOQUOT)
+
+install_mac_pa_dylib: $(PA_MAC_DYLIB_DEST)
+	@echo$(ECHONOTHING)
+	@echo $(ECHOQUOT)==================$(ECHOQUOT)
+	@echo $(ECHOQUOT) INSTALL COMPLETE$(ECHOQUOT)
+	@echo $(ECHOQUOT)==================$(ECHOQUOT)
+	@echo$(ECHONOTHING)
+	@echo $(ECHOQUOT)libportaudio.2.dylib has been copied into your /usr/local/lib/ folder!$(ECHOQUOT)
+	@echo $(ECHOQUOT)Type 'sudo make uninstall_mac_pa_dylib' to remove the file.$(ECHOQUOT)
+	@echo$(ECHONOTHING)
 
 custom_help:
 	@echo$(ECHONOTHING)
@@ -316,6 +338,9 @@ $(HELPER_SOUND_OBJS): $(HELPER_SOUND_SRCS)
 
 libportaudio-2.dll:
 	$(CPYWINDLL)
+
+$(PA_MAC_DYLIB_DEST):
+	$(call cpyinexist,pa/lib/.libs/$(PA_MAC_DYLIB),$(PA_MAC_DYLIB_DEST))
 
 sounds:
 	$(call mkdir,../sounds)
@@ -386,6 +411,15 @@ clean_bins_notice:
 	@echo$(ECHONOTHING)
 	$(PAUSECMD)
 
+uninstall_mac_pa_dylib: clean_$(PA_MAC_DYLIB)
+	@echo$(ECHONOTHING)
+	@echo $(ECHOQUOT)====================$(ECHOQUOT)
+	@echo $(ECHOQUOT) UNINSTALL COMPLETE$(ECHOQUOT)
+	@echo $(ECHOQUOT)====================$(ECHOQUOT)
+	@echo$(ECHONOTHING)
+	@echo $(ECHOQUOT)libportaudio.2.dylib has been removed from your /usr/local/lib/ folder!$(ECHOQUOT)
+	@echo$(ECHONOTHING)
+
 $(CLEAN_BINS):
 	$(call rmiexist,$(@:%_c=%)$(EXEEXT))
 
@@ -422,3 +456,6 @@ clean_libportaudio-2.dll:
 
 clean_$(RUN_TESTS_SCRIPT_FILE):
 	$(call rmiexist,$(@:clean_%=../%))
+
+clean_$(PA_MAC_DYLIB):
+	$(call rmiexist,$(PA_MAC_DYLIB_DEST))
