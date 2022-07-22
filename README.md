@@ -233,7 +233,25 @@ To test the sound playing property of your built PortAudio, enter `bin/paex_sine
 
 #### Dynamic library on macOS
 
-In your PortAudio folder the building process creates a file called `libportaudio.2.dylib` inside the hidden folder `lib/.libs/`. You will need to copy the file to the `/usr/local/lib/` folder. You can use the command below to do so:
+In your PortAudio folder the building process creates a file called `libportaudio.2.dylib` inside the hidden folder `lib/.libs/`. You will need to copy the file to the `/usr/local/lib/` folder.
+
+To automatically copy the library to the correct folder, you can use
+
+```
+sudo make install_mac_pa_dylib
+```
+
+to install, and 
+
+```
+sudo make uninstall_mac_pa_dylib
+```
+
+to reverse.
+
+The process has to be seperated because the folder is in a location that is only modifiable by a root user; one would have to run that process in elevated permission mode.
+
+You can also use the command below to manually do so:
 
 ```
 sudo cp lib/.libs/libportaudio.2.dylib /usr/local/lib
