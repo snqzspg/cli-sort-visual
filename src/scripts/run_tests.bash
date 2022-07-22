@@ -39,6 +39,10 @@ then
 	sleep 1;
 	"./$sort" "$delay" "$number" heapified;
 	sleep 1;
+	"./$sort" "$delay" "$number" smoothheapified;
+	sleep 1;
+	"./$sort" "$delay" "$number" sortedheapinput;
+	sleep 1;
 	"./$sort" "$delay" "$number" halfreverse;
 	sleep 1;
 	"./$sort" "$delay" "$number" reverseevens;
@@ -48,8 +52,6 @@ then
 	"./$sort" "$delay" "$number" crossweave1;
 	sleep 1;
 	"./$sort" "$delay" "$number" circlepass;
-	sleep 1;
-	"./$sort" "$delay" "$number" sortedheapinput;
 	sleep 1;
 	"./$sort" "$delay" "$number" triangular;
 fi

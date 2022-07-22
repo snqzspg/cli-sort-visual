@@ -33,6 +33,10 @@ timeout /t 1 > NUL
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" heapified
 timeout /t 1 > NUL
+"%sort%" "%delay%" "%number%" smoothheapified
+timeout /t 1 > NUL
+"%sort%" "%delay%" "%number%" sortedheapinput
+timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" halfreverse
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" reverseevens
@@ -42,8 +46,6 @@ timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" crossweave1
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" circlepass
-timeout /t 1 > NUL
-"%sort%" "%delay%" "%number%" sortedheapinput
 timeout /t 1 > NUL
 "%sort%" "%delay%" "%number%" triangular
 

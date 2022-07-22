@@ -54,12 +54,13 @@ shuffle_patterns = [
 	'radixpass',
 	'binarysearchtree',
 	'heapified',
+	'smoothheapified',
+	'sortedheapinput',
 	'halfreverse',
 	'reverseevens',
 	'shuffleodds',
 	'crossweave1',
 	'circlepass',
-	'sortedheapinput',
 	'triangular'
 ]
 
