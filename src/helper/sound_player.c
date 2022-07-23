@@ -188,7 +188,7 @@ static harmonic_t smu_choir_voice_attempt_1[55] = {
 };
 static size_t n_smu_choir_voice_attempt_1_harmonics = 55;
 
-double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics);
+double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics, char limit_amplitude);
 double custom_additive_sine_wave_fx(double relative_phase);
 static int process_harmonic_type(const char *s);
 
@@ -519,7 +519,7 @@ static int audreq_handle_tick(const void *input_buffer, void *output_buffer, uns
 
 #define strip_int(x) ((x) - (double) ((int) (x)))
 
-double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics) {
+double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics, size_t nharmonics, char limit_amplitude) {
 	double r = 0.0;
 	// assert that sum of all amplitudes = 1.0
 	for (size_t i = 0; i < nharmonics; i++) {
@@ -542,6 +542,9 @@ double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics,
 				break;
 		}
 	}
+	if (!limit_amplitude) {
+		return r;
+	}
 	if (r > 1.0) {
 		r = 1.0;
 	}
@@ -552,15 +555,15 @@ double additive_sine_wave_fx(double relative_phase, const harmonic_t *harmonics,
 }
 
 double custom_additive_sine_wave_fx(double relative_phase) {
-	return additive_sine_wave_fx(relative_phase, additive_sines, additive_sines_count);
+	return additive_sine_wave_fx(relative_phase, additive_sines, additive_sines_count, 1);
 }
 
 double violin_wave_fx(double relative_phase) {
-	return additive_sine_wave_fx(relative_phase, violin, nviolin_harmonics);
+	return additive_sine_wave_fx(relative_phase, violin, nviolin_harmonics, 1);
 }
 
 double smu_choir_voice_attempt_1_wave_fx(double relative_phase) {
-	return additive_sine_wave_fx(relative_phase, smu_choir_voice_attempt_1, n_smu_choir_voice_attempt_1_harmonics);
+	return additive_sine_wave_fx(relative_phase, smu_choir_voice_attempt_1, n_smu_choir_voice_attempt_1_harmonics, 1);
 }
 
 #define READ_FILE_BUFFER 40
@@ -741,12 +744,30 @@ static void strip_spaces(char* s) {
 }
 
 static void normalize_harmonics(harmonic_t* __restrict__ harmonics, size_t nharmonics) {
-	double sum_amp = 0.0;
-	for (size_t i = 0; i < nharmonics; i++) {
-		sum_amp += fabs(harmonics[i].amp);
+	// double sum_amp = 0.0;
+	// for (size_t i = 0; i < nharmonics; i++) {
+	// 	sum_amp += fabs(harmonics[i].amp);
+	// }
+	// for (size_t i = 0; i < nharmonics; i++) {
+	// 	harmonics[i].amp /= sum_amp;
+	// }
+
+	// === Using highest amplitude as base from plotting many points ===
+
+	// The lowest audible frequency is 20Hz.
+	// This frequency allows the most number of plots between 0 and 1.
+	// The plots are assumed to be 44100 plots per second.
+	size_t samples_20hz = 44100.0 / 20.0;
+
+	double max_amp = 0.0;
+	for (size_t i = 0; i < samples_20hz; i++) {
+		double amp = fabs(additive_sine_wave_fx((double) i / (double) samples_20hz, harmonics, nharmonics, 0));
+		if (amp > max_amp) {
+			max_amp = amp;
+		}
 	}
 	for (size_t i = 0; i < nharmonics; i++) {
-		harmonics[i].amp /= sum_amp;
+		harmonics[i].amp /= max_amp;
 	}
 }
 
