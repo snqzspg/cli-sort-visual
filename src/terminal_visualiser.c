@@ -287,16 +287,17 @@ static char* get_shuffle_display_name(const char* term);
 
 void (*compr_algo)(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*));
 
-void call_comparison_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args) {
+int call_comparison_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args) {
 	assert(compr != NULL);
 	compr_algo(list, nitems, size, compr);
+	return 0;
 }
 
 typedef size_t (*radix_num_digits_t)(const void*, size_t);
 typedef size_t (*radix_get_nth_digit_t)(const void*, size_t);
 void (*radix_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t));
 
-void call_radix_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args) {
+int call_radix_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args) {
 	assert(vis_args != NULL);
 	assert(nvis_args >= 3);
 	
@@ -308,6 +309,7 @@ void call_radix_sort(void* list, size_t nitems, size_t size, int (*compr)(const 
 	assert(vis_args[2].buffer != NULL);
 
 	radix_algo(list, nitems, size, *((size_t *) vis_args[0].buffer), (radix_num_digits_t) vis_args[1].buffer, (radix_get_nth_digit_t) vis_args[2].buffer);
+	return 0;
 }
 
 // ========== End main helper functions ==========
@@ -613,7 +615,9 @@ static int perform_sort_visual(int delay, const int arr_len, const char* shuffle
 
 	reset_counters();
 	is_sorting = 1;
-	call_sort(display_array, display_array_len, sizeof(int), larger_int_back, nvis_args, vis_args);
+	if (call_sort(display_array, display_array_len, sizeof(int), larger_int_back, nvis_args, vis_args) != 0) {
+		error_pause(error_handle_mode);
+	}
 	is_sorting = 0;
 
 	return get_sort_status(d_array_clone, arr_len, optimization_on);

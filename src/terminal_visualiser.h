@@ -14,12 +14,15 @@ typedef struct {
 	size_t size;
 } vis_arg_t;
 
-typedef void (*call_sort_t)(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
+/**
+ * Return 0 to indicate sort success, otherwise to indicate failure.
+ */
+typedef int (*call_sort_t)(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
 
 // ========== Main helper functions ==========
 
-void call_comparison_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
-void call_radix_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
+int call_comparison_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
+int call_radix_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
 
 // ========== End main helper functions ==========
 
