@@ -14,8 +14,8 @@ W_SOUND_FLAGS = -DPA_INSTALLED
 W_SOUND_LINKERS = -L./pa/lib/.libs -I./pa/include -lportaudio
 
 VERSION = 1.1
-BUILD = 202207231608
-IS_SNAPSHOT=0
+BUILD = 202207210206
+IS_SNAPSHOT=1
 
 DVERSION_FLAGS = -DVERSION=\"$(VERSION)\"
 DBUILD_FLAGS = -DBUILD=\"$(BUILD)\"
@@ -65,7 +65,10 @@ BUILDLIST := heap_sort \
 	cycle_sort \
 	better_cycle_sort \
 	further_optimised_bubble_sort \
-	further_optimised_cocktail_shaker_sort
+	further_optimised_cocktail_shaker_sort \
+	smooth_sort \
+	smooth_sort_unknown_author \
+	counting_sort
 
 SRCS = $(BUILDLIST:%=%.c)
 OBJS = $(BUILDLIST:%=objs/%.o)

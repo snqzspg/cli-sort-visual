@@ -43,3 +43,6 @@ cycle_sort
 better_cycle_sort
 further_optimised_bubble_sort
 further_optimised_cocktail_shaker_sort
+smooth_sort
+smooth_sort_unknown_author
+counting_sort
