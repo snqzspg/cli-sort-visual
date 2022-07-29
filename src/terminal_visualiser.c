@@ -122,6 +122,10 @@
 #define SHOW_BUILD 0
 #endif
 
+#ifndef DISPLAY_JUPITERBJY_NOTATION
+#define DISPLAY_JUPITERBJY_NOTATION 1
+#endif
+
 static int bar_display_delay = DEFAULT_DIS_DELAY;
 
 static int *display_array = NULL;
@@ -163,6 +167,7 @@ static char use_eq_temp = USE_EQ_TEMP;
 static char display_full_bar = DISPLAY_FULL_BAR;
 static char show_ver_no = SHOW_VER;
 static char show_build_no = SHOW_BUILD;
+static char display_jupiterbjy_numbers = DISPLAY_JUPITERBJY_NOTATION;
 
 #define CHORD_MODE_OFF 0
 #define CHORD_MODE_NOTE 1
@@ -232,6 +237,7 @@ static int pgcg_get_console_cols();
 static size_t get_concat_sort_name_len(const char* prefix);
 static void cpy_concat_sort_name(char* __restrict__ concat_buffer, const char* prefix);
 static void print_version_top_right(const char *prefix, int ncols);
+static char jupiterbjy_number_representation(int i);
 static char pointer_in_array(const void* p);
 static char is_help_arg(const char* arg);
 static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_args);
@@ -727,14 +733,19 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 	int i2 = (p2 - (void*) display_array) / sizeof(int);
 	int vislen = display_array_len < ncols - 1 ? display_array_len : ncols - 1;
 	if (prefix != NULL) {
-		// pnt_trunc_f("%s\n\n", ncols, prefix);
 		print_version_top_right(prefix, ncols);
 	}
 	int allowed_h = nrows - non_array_lines;
 	allowed_h = highest_item < allowed_h ? highest_item : allowed_h;
+	if (display_jupiterbjy_numbers && highest_item / 10 < allowed_h) {
+		allowed_h = highest_item / 10;
+		if (highest_item % 10 != 0) {
+			allowed_h++;
+		}
+	}
 	for (int i = allowed_h; i > 0; i--) {
 		for (int j = 0; j < vislen; j++) {
-			size_t elem_row_no = display_array[j] * allowed_h / highest_item;
+			size_t elem_row_no = display_jupiterbjy_numbers ? ((display_array[j] - 1) / 10 + 1) : (display_array[j] * allowed_h / highest_item);
 			if (display_array[j] != 0 && (display_full_bar ? (i == 1 || elem_row_no >= i) : (elem_row_no == i || (i == 1 && elem_row_no == 0)))) {
 				if ((p1 != NULL && j == i1) || (p2 != NULL && j == i2)) {
 					if ((j == i1 && is_p1_comparison) || (j == i2 && is_p2_comparison)) {
@@ -743,7 +754,11 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 						fputc(active_bar_char, stdout);
 					}
 				} else {
-					fputc(normal_bar_char, stdout);
+					if (display_jupiterbjy_numbers && (elem_row_no == i || (i == 1 && elem_row_no == 0))) {
+						fputc(jupiterbjy_number_representation(display_array[j]), stdout);
+					} else {
+						fputc(normal_bar_char, stdout);
+					}
 				}
 			} else {
 				fputc(' ', stdout);
@@ -763,19 +778,6 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 	pnt_trunc("Time taken: ", ncols);
 	if (print_precise_time) {
 		mstime_t mst1 = mstime() - start_time_ms;
-		// pnt_trunc(" [precise (WIP): ", ncols);
-		// if (include_sleep_time) {
-		// 	if (delay_secs_overflow) {
-		// 		pnt_trunc("too long!", ncols);
-		// 	} else {
-		// 		print_time((double)(t1 + delay_secs) / CLOCKS_PER_SEC, ncols);
-		// 	}
-		// } else {
-		// 	print_time((double)t1 / CLOCKS_PER_SEC);
-		// }
-		// pnt_trunc(" / ", ncols);
-		// print_time((double) mst1 / 1000.0, ncols);
-		// pnt_trunc("]", ncols);
 		print_mstime(mst1, ncols);
 	} else {
 		time_t vt1 = time(NULL) - vis_start_time;
@@ -2062,6 +2064,7 @@ static int buffer_optimize_cleanup(char force) {
 
 #define GRAPH_BAR 1
 #define GRAPH_PLOTS 0
+#define GRAPH_JUPITERBJY_DIGITS 2
 
 static int get_display_mode(const char* arg) {
 	if (arg == NULL) {
@@ -2072,6 +2075,9 @@ static int get_display_mode(const char* arg) {
 	}
 	if (strcmp(arg, "plot") == 0) {
 		return GRAPH_PLOTS;
+	}
+	if (strcmp(arg, "digits") == 0) {
+		return GRAPH_JUPITERBJY_DIGITS;
 	}
 	return GRAPH_BAR;
 }
@@ -2375,6 +2381,14 @@ static void print_version_top_right(const char *prefix, int ncols) {
 	#endif
 	}
 	pnt_trunc("\n\n", ncols);
+}
+
+static char jupiterbjy_number_representation(int i) {
+	i %= 10;
+	if (i == 0) {
+		return 'X';
+	}
+	return '0' + i;
 }
 
 static char pointer_in_array(const void* p) {
@@ -2823,6 +2837,7 @@ static void parse_option(const char* option_name, const char* option_value, int*
 		return;
 	case display_style_hash:
 		display_full_bar = get_display_mode(option_value);
+		display_jupiterbjy_numbers = get_display_mode(option_value) == GRAPH_JUPITERBJY_DIGITS;
 		return;
 	case sound_texture_hash:
 		#pragma GCC diagnostic push
@@ -2941,15 +2956,17 @@ static void create_options_file() {
 	fprintf(opt, "The character to display for accessed bars. Must be ASCII.\n");
 	fprintf(opt, "%s = %c ; ", options[6], COMPARE_BAR_CHAR);
 	fprintf(opt, "The character to display for compared bars. Must be ASCII.\n");
-	fprintf(opt, "%s = %s ; ", options[7], DISPLAY_FULL_BAR ? "bar" : "plot");
+	fprintf(opt, "%s = %s ; ", options[7], DISPLAY_FULL_BAR ? (DISPLAY_JUPITERBJY_NOTATION ? "digits" : "bar") : "plot");
 	fprintf(opt, "The style of the display of numbers.\n");
-	last_opt_char_count = strlen(options[7]) + 3 + (DISPLAY_FULL_BAR ? 3 : 4) + 1;
+	last_opt_char_count = strlen(options[7]) + 3 + (DISPLAY_FULL_BAR ? (DISPLAY_JUPITERBJY_NOTATION ? 6 :3) : 4) + 1;
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, "; The possible values are:\n");
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, ";  1. 'bar'  - Display integers as vertical bar lines.\n");
 	print_spaces(last_opt_char_count, opt);
 	fprintf(opt, ";  2. 'plot' - Display integers as plots.\n");
+	print_spaces(last_opt_char_count, opt);
+	fprintf(opt, ";  3. 'digits' - Display 123456789X on top of bars. (Currently incomplete) Inspired by https://github.com/jupiterbjy/Sorting_in_visual \n");
 	fprintf(opt, "\n");
 	fprintf(opt, "%s = %s ; ", options[8], "square");
 	fprintf(opt, "Timbre of sound. Only have basic options (./<sort_name> help for more info)\n");

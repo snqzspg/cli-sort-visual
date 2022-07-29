@@ -19,6 +19,16 @@ typedef struct {
  */
 typedef int (*call_sort_t)(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
 
+/**
+ * This struct will be used as the item to sort instead of the primitive integers.
+ * num stores the number the sorting algorithm should read to sort.
+ * tag is an int that will follow the num when the struct array is sorted.
+ */
+typedef struct {
+	int num;
+	int tag;
+} vis_int_t;
+
 // ========== Main helper functions ==========
 
 int call_comparison_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args);
