@@ -10,8 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "anti_quicksort.h"
 #include "../terminal_visualiser.h"
+
+#include "anti_quicksort.h"
 
 /*
  * Thanks! https://stackoverflow.com/questions/2232706/swapping-objects-using-pointers
@@ -107,7 +108,7 @@ static void __qs(void *list, size_t nitems, size_t size, int (*compr)(const void
 	__qs(partition_ptr + size, nitems - left_len - 1, size, compr);
 }
 
-static int *val;      // item values
+static vis_int_t *val;      // item values
 static int ncmp;      // number of comparisons
 static int nsolid;    // number of solid items
 static int candidate; // pivot candidate
@@ -115,14 +116,14 @@ static int gas;       // gas value
 
 static int *number_counts;
 
-#define freeze(x) number_counts[val[x]]--; val[x] = nsolid++; number_counts[val[x]]++; \
+#define freeze(x) number_counts[val[x].num]--; val[x].num = nsolid++; number_counts[val[x].num]++; \
 print_array_bars("Performing anti-quicksort", &(val[x]), 0, NULL, 0, 1)
 
 static int cmp(const void *px, const void *py) { // per C standard
 	const int x = *(const int*) px;
 	const int y = *(const int*) py;
 	ncmp++;
-	if (val[x] == gas && val[y] == gas) {
+	if (val[x].num == gas && val[y].num == gas) {
 		mark_array_write();
 		if (x == candidate) {
 			freeze(x);
@@ -130,15 +131,15 @@ static int cmp(const void *px, const void *py) { // per C standard
 			freeze(y);
 		}
 	}
-	if (val[x] == gas) {
+	if (val[x].num == gas) {
 		candidate = x;
-	} else if (val[y] == gas) {
+	} else if (val[y].num == gas) {
 		candidate = y;
 	}
-	return val[x] - val[y]; // only the sign matters
+	return val[x].num - val[y].num; // only the sign matters
 }
 
-int antiqsort_v(int *a, int n, int *clone_a, int clone_n) {
+int antiqsort_v(vis_int_t *a, int n, int *clone_a, int clone_n) {
 	assert(n == clone_n);
 	int i;
 	int j;
@@ -160,8 +161,8 @@ int antiqsort_v(int *a, int n, int *clone_a, int clone_n) {
 	nsolid = ncmp = candidate = 0;
 	for (i = 0; i < n; i++) {
 		ptr[i] = i;
-		val[i] = gas;
-		number_counts[val[i]]++;
+		val[i].num = gas;
+		number_counts[val[i].num]++;
 		mark_array_write();
 		print_array_bars("Performing anti-quicksort", &(val[i]), 0, NULL, 0, 1);
 	}

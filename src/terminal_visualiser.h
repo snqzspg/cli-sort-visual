@@ -149,7 +149,7 @@ void mark_aux_array_write();
 
 void memcpy_v(void *dest, const void *src, const size_t n);
 void memmove_v(void *dest, const void *src, const size_t n);
-void remove_varray_item(int *ptr);
+void remove_varray_item(vis_int_t *ptr);
 void set_v_array_len(int n);
 
 void reset_comparisons();

@@ -7,12 +7,13 @@
 #include <stdlib.h>
 
 #include "../terminal_visualiser.h"
+
 #include "triangular_input.h"
 
 /**
  * Yeah at the end had to borrow from https://github.com/Gaming32/ArrayV/blob/main/src/main/java/io/github/arrayv/utils/Shuffles.java
  */
-void triangular_shuffle(int *display_array, int display_array_len) {
+void triangular_shuffle(vis_int_t *display_array, int display_array_len) {
 	int triangle[display_array_len];
 
 	for (int i = 0; i < display_array_len; i++) {
@@ -56,7 +57,7 @@ void triangular_shuffle(int *display_array, int display_array_len) {
 		triangle[i - 1] = --counts[triangle[i - 1]];
 	}
 
-	int temp[display_array_len];
+	vis_int_t temp[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		assert(triangle[i] < display_array_len);
 		temp[i] = display_array[triangle[i]];

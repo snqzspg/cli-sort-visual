@@ -126,11 +126,15 @@
 #define DISPLAY_JUPITERBJY_NOTATION 1
 #endif
 
+#ifndef DEF_N_SIMILAR_ITEMS
+#define DEF_N_SIMILAR_ITEMS 1
+#endif
+
 static int bar_display_delay = DEFAULT_DIS_DELAY;
 
-static int *display_array = NULL;
+static vis_int_t *display_array = NULL;
 static int display_array_len = 0;
-static const int non_array_lines = 15;
+static int non_array_lines = 15;
 
 static char normal_bar_char = BAR_CHAR;
 static char active_bar_char = ACTIVE_BAR_CHAR;
@@ -168,6 +172,8 @@ static char display_full_bar = DISPLAY_FULL_BAR;
 static char show_ver_no = SHOW_VER;
 static char show_build_no = SHOW_BUILD;
 static char display_jupiterbjy_numbers = DISPLAY_JUPITERBJY_NOTATION;
+static char display_stability_test = 0;
+static int stability_test_highest_tag = -1;
 
 #define CHORD_MODE_OFF 0
 #define CHORD_MODE_NOTE 1
@@ -227,7 +233,7 @@ static char delay_secs_overflow = 0;
 static void print_time(double secs, int ncols);
 static void print_mstime(mstime_t msecs, int ncols);
 static void print_time_long(time_t secs, int ncols);
-static int find_max_int(int* arr, size_t len);
+static int find_max_int(vis_int_t* arr, size_t len);
 void sleep_ms(int milliseconds);
 static char should_include_sleep_time(int test_delay);
 static void clear_screen_(char complete);
@@ -238,6 +244,7 @@ static size_t get_concat_sort_name_len(const char* prefix);
 static void cpy_concat_sort_name(char* __restrict__ concat_buffer, const char* prefix);
 static void print_version_top_right(const char *prefix, int ncols);
 static char jupiterbjy_number_representation(int i);
+static char jupiterbjy_number_representation2(int i);
 static char pointer_in_array(const void* p);
 static char is_help_arg(const char* arg);
 static void print_usage_info(const char* arg0, size_t nvis_args, vis_arg_t *vis_args);
@@ -245,8 +252,8 @@ static size_t int_num_digits(const void* a, size_t b);
 static size_t base_n_modulo(const void* a, size_t b);
 static int get_chord_mode(const char *arg, int* __restrict__ chord_id);
 static int get_chord_timing(int delay_ms);
-static double get_freq_by_pointer(const int *p);
-static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization);
+static double get_freq_by_pointer(const vis_int_t *p);
+static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization/*, int *__restrict__ n_similar_items*/);
 static int read_chord_progression_from_file();
 static void custom_progression_cleanup();
 
@@ -269,14 +276,14 @@ static int buffer_optimize_cleanup(char force);
 
 // ========== Visulizer start and cleanup functions breadcrumbs ==========
 
-static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name);
+static void prepare_visual(vis_int_t *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const int n_similar_items, const char* algo_name);
 static int get_sort_status(int *d_array_clone, int array_len, const char optimization_on);
-static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args);
+static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const int n_similar_items, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args);
 // static int perform_radix_sort_visual(int delay, int arr_len, const char* shuffle_type, size_t unsigned_base, const char* chord_arg, double maxamp, char* wave_type, void (*sort_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t)), const char* algo_name);
 /**
  * Returns 1 if program should exit
  */
-static int process_args(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle, int argc, char** argv, int* __restrict__ radix_arg_id, size_t nvis_args, vis_arg_t *vis_args);
+static int process_args(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle/*, int *__restrict__ n_similar_items*/, int argc, char** argv, int* __restrict__ radix_arg_id, size_t nvis_args, vis_arg_t *vis_args);
 
 /**
  * Returns 1 if program should exit
@@ -374,9 +381,10 @@ int vis_main_visargs(int argc, char** argv, const char* algo_name, call_sort_t c
 	char default_wave[] = "square";
 	char* wave_type = default_wave;
 	char use_optimization = 1;
+	int n_similar_items = DEF_N_SIMILAR_ITEMS;
 	int arg_id = 0;
-	set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type, &use_optimization);
-	if (process_args(&delay, &arr_len, &shuffle, argc, argv, &arg_id, nvis_args, vis_args)) {
+	set_options_from_file(&delay, &arr_len, &shuffle, &chord_arg, &wave_type, &use_optimization/*, &n_similar_items*/);
+	if (process_args(&delay, &arr_len, &shuffle/*, &n_similar_items*/, argc, argv, &arg_id, nvis_args, vis_args)) {
 		return 0;
 	}
 	for (size_t i = 0; i < nvis_args; i++) {
@@ -395,7 +403,7 @@ int vis_main_visargs(int argc, char** argv, const char* algo_name, call_sort_t c
 	if (process_args_2(&chord_arg, &max_sound_amplitude, &wave_type, argc, argv, &arg_id)) {
 		return 0;
 	}
-	return perform_sort_visual(delay, arr_len, shuffle, chord_arg, max_sound_amplitude, wave_type, use_optimization, algo_name, call_sort, nvis_args, vis_args);
+	return perform_sort_visual(delay, arr_len, shuffle, chord_arg, max_sound_amplitude, wave_type, use_optimization, n_similar_items, algo_name, call_sort, nvis_args, vis_args);
 }
 
 /**
@@ -519,7 +527,7 @@ int perform_radix_sort_visual_args(int argc, char** argv, size_t default_radix_b
 
 // ========== Visulizer start and cleanup functions ==========
 
-static void prepare_visual(int *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name) {
+static void prepare_visual(vis_int_t *d_array, int *d_array_clone, int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const int n_similar_items, const char* algo_name) {
 	#ifdef _WIN32
 	clear_screen_win32_init();
 	#endif
@@ -535,9 +543,19 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 		}
 	}
 	#endif
-	for (int i = 0; i < arr_len; i++) {
-		d_array[i] = i + 1;
-		d_array_clone[i] = i + 1;
+	if (n_similar_items > 1) {
+		for (int i = 0; i < arr_len; i++) {
+			d_array[i].num = i / n_similar_items + 1;
+			d_array[i].tag = -1;
+			d_array_clone[i] = i / n_similar_items + 1;
+		}
+		non_array_lines += 3;
+		display_stability_test = 1;
+	} else {
+		for (int i = 0; i < arr_len; i++) {
+			d_array[i].num = i + 1;
+			d_array_clone[i] = i + 1;
+		}
 	}
 
 	display_array = d_array;
@@ -576,6 +594,27 @@ static void prepare_visual(int *d_array, int *d_array_clone, int delay, const in
 	print_array_bars("Shuffling Done! :D", NULL, 0, NULL, 0, 1);
 }
 
+static void tag_similar_items(vis_int_t *d_array, const int arr_len, const int highest_number, const int n_similar_items) {
+	int counts[highest_number + 1];
+	for (int i = 0; i <= highest_number; i++) {
+		counts[i] = 0;
+	}
+	stability_test_highest_tag = n_similar_items - 1;
+	int highest_tag = -1; // Should not be needed, but just in case
+	clear_screen_(1);
+	for (int i = 0; i < arr_len; i++) {
+		d_array[i].tag = counts[d_array[i].num];
+		counts[d_array[i].num]++;
+		print_array_bars("Tagging similar items", d_array + i, 0, NULL, 0, 1);
+		if (highest_tag < d_array[i].tag) { // Should not be needed, but just in case
+			highest_tag = d_array[i].tag;   // Should not be needed, but just in case
+		}                                   // Should not be needed, but just in case
+	}
+	stability_test_highest_tag = highest_tag; // Should not be needed, but just in case
+	clear_screen_(1);
+	print_array_bars("Tagging Done! :D", NULL, 0, NULL, 0, 1);
+}
+
 static int get_sort_status(int *d_array_clone, int array_len, const char optimization_on) {
 	int incorrect_index = 0;
 
@@ -611,17 +650,21 @@ static int get_sort_status(int *d_array_clone, int array_len, const char optimiz
 	return !sort_correct;
 }
 
-static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args) {
-	int d_array[arr_len];
+static int perform_sort_visual(int delay, const int arr_len, const char* shuffle_type, const char* chord_arg, double maxamp, char* wave_type, const char optimization_on, const int n_similar_items, const char* algo_name, call_sort_t call_sort, size_t nvis_args, vis_arg_t *vis_args) {
+	vis_int_t d_array[arr_len];
 	int d_array_clone[arr_len];
 
-	prepare_visual(d_array, d_array_clone, delay, arr_len, shuffle_type, chord_arg, maxamp, wave_type, optimization_on, algo_name);
+	prepare_visual(d_array, d_array_clone, delay, arr_len, shuffle_type, chord_arg, maxamp, wave_type, optimization_on, n_similar_items, algo_name);
+
+	if (n_similar_items > 1) {
+		tag_similar_items(d_array, arr_len, highest_item, n_similar_items);
+	}
 
 	include_sleep_time = should_include_sleep_time(1000);
 
 	reset_counters();
 	is_sorting = 1;
-	if (call_sort(display_array, display_array_len, sizeof(int), larger_int_back, nvis_args, vis_args) != 0) {
+	if (call_sort(display_array, display_array_len, sizeof(vis_int_t), larger_int_back, nvis_args, vis_args) != 0) {
 		error_pause(error_handle_mode);
 	}
 	is_sorting = 0;
@@ -629,27 +672,10 @@ static int perform_sort_visual(int delay, const int arr_len, const char* shuffle
 	return get_sort_status(d_array_clone, arr_len, optimization_on);
 }
 
-// static int perform_radix_sort_visual(int delay, int arr_len, const char* shuffle_type, size_t unsigned_base, const char* chord_arg, double maxamp, char* wave_type, void (*sort_algo)(void*, size_t, size_t, const size_t, size_t (*num_digits)(const void*, size_t), size_t (*get_nth_digit)(const void*, size_t)), const char* algo_name) {
-// 	int d_array[arr_len];
-// 	int d_array_clone[arr_len];
-
-// 	prepare_visual(d_array, d_array_clone, delay, arr_len, shuffle_type, chord_arg, maxamp, wave_type, algo_name);
-// 	radix_base = unsigned_base;
-
-// 	include_sleep_time = should_include_sleep_time(1000);
-
-// 	reset_counters();
-// 	is_sorting = 1;
-// 	sort_algo(display_array, display_array_len, sizeof(int), unsigned_base, int_num_digits, base_n_modulo);
-// 	is_sorting = 0;
-
-// 	return get_sort_status(d_array_clone, arr_len);
-// }
-
 /**
  * Returns 1 if program should exit
  */
-static int process_args(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle, int argc, char** argv, int* __restrict__ radix_arg_id, size_t nvis_args, vis_arg_t *vis_args) {
+static int process_args(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle/*, int *__restrict__ n_similar_items*/, int argc, char** argv, int* __restrict__ radix_arg_id, size_t nvis_args, vis_arg_t *vis_args) {
 	int arg_id = 1;
 	if (argc >= arg_id + 1) {
 		if (is_help_arg(argv[arg_id])) {
@@ -679,7 +705,12 @@ static int process_args(int* __restrict__ delay, int* __restrict__ arr_len, char
 	arg_id++;
 	if (argc >= arg_id + 1) {
 		*shuffle = argv[arg_id];
-	}
+	}/*
+	arg_id++;
+	if (argc >= arg_id + 1) {
+		int val = atoi(argv[arg_id]);
+		*n_similar_items = val > 1 ? val : 1;
+	}*/
 	arg_id++;
 	if (radix_arg_id != NULL) {
 		*radix_arg_id = arg_id;
@@ -729,24 +760,24 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 		last_nrows = nrows;
 		clear_screen_(1);
 	}
-	int i1 = (p1 - (void*) display_array) / sizeof(int);
-	int i2 = (p2 - (void*) display_array) / sizeof(int);
+	int i1 = (p1 - (void*) display_array) / sizeof(vis_int_t);
+	int i2 = (p2 - (void*) display_array) / sizeof(vis_int_t);
 	int vislen = display_array_len < ncols - 1 ? display_array_len : ncols - 1;
 	if (prefix != NULL) {
 		print_version_top_right(prefix, ncols);
 	}
 	int allowed_h = nrows - non_array_lines;
 	allowed_h = highest_item < allowed_h ? highest_item : allowed_h;
-	if (display_jupiterbjy_numbers && highest_item / 10 < allowed_h) {
+	/*if (display_jupiterbjy_numbers && highest_item / 10 < allowed_h) {
 		allowed_h = highest_item / 10;
 		if (highest_item % 10 != 0) {
 			allowed_h++;
 		}
-	}
+	}*/
 	for (int i = allowed_h; i > 0; i--) {
 		for (int j = 0; j < vislen; j++) {
-			size_t elem_row_no = display_jupiterbjy_numbers ? ((display_array[j] - 1) / 10 + 1) : (display_array[j] * allowed_h / highest_item);
-			if (display_array[j] != 0 && (display_full_bar ? (i == 1 || elem_row_no >= i) : (elem_row_no == i || (i == 1 && elem_row_no == 0)))) {
+			size_t elem_row_no = /*display_jupiterbjy_numbers ? ((display_array[j].num - 1) / 10 + 1) :*/ (display_array[j].num * allowed_h / highest_item);
+			if (display_array[j].num != 0 && (display_full_bar ? (i == 1 || elem_row_no >= i) : (elem_row_no == i || (i == 1 && elem_row_no == 0)))) {
 				if ((p1 != NULL && j == i1) || (p2 != NULL && j == i2)) {
 					if ((j == i1 && is_p1_comparison) || (j == i2 && is_p2_comparison)) {
 						fputc(compare_bar_char, stdout);
@@ -755,7 +786,7 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 					}
 				} else {
 					if (display_jupiterbjy_numbers && (elem_row_no == i || (i == 1 && elem_row_no == 0))) {
-						fputc(jupiterbjy_number_representation(display_array[j]), stdout);
+						fputc(jupiterbjy_number_representation(display_array[j].num), stdout);
 					} else {
 						fputc(normal_bar_char, stdout);
 					}
@@ -766,7 +797,15 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 		}
 		fputc('\n', stdout);
 	}
+
+	if (display_stability_test) {
+		for (int i = 0; i < vislen; i++) {
+			fputc(jupiterbjy_number_representation2(display_array[i].tag), stdout);
+		}
+		pnt_trunc("\n", ncols);
+	}
 	pnt_trunc("\n", ncols);
+
 	int delay_to_use = delay_factor == 1.0 ? bar_display_delay : (int) ((double) bar_display_delay * delay_factor);
 	pnt_trunc_f("Number of items: %d, delay: %dms \n", ncols, display_array_len, delay_to_use);
 	pnt_trunc("[Enter <sort_name> help for more info to adjust the above]\n", ncols);
@@ -799,13 +838,16 @@ void print_array_bars(const char *prefix, const void *p1, char is_p1_comparison,
 		pnt_trunc(" (may be inaccurate)\n", ncols);
 	}
 	pnt_trunc_f("Comparisons are marked with '%c'\nOther array accesses are marked '%c'.\n", ncols, compare_bar_char, active_bar_char);
+	if (display_stability_test) {
+		pnt_trunc("If the original order of similar items are preserved,\nthe numbers at the bottom will be in ascending clusters separated by spaces.\n", ncols);
+	}
 	if (in_progress) pnt_trunc("Press / hold / spam <ctrl-c> to cancel.\n", ncols);
 	pnt_trunc("\n", ncols);
 	fflush(stdout);
 	if (play_sound && (pointer_in_array(p1) || pointer_in_array(p2))) {
 		double freqs[2];
-		freqs[0] = get_freq_by_pointer((const int *) p1);
-		freqs[1] = get_freq_by_pointer((const int *) p2);
+		freqs[0] = get_freq_by_pointer((const vis_int_t *) p1);
+		freqs[1] = get_freq_by_pointer((const vis_int_t *) p2);
 		double minfreq = pointer_in_array(p1) ? freqs[0] : freqs[1];
 		if (pointer_in_array(p1) && pointer_in_array(p2)) {
 			minfreq = freqs[0] < freqs[1] ? freqs[0] : freqs[1];
@@ -914,17 +956,18 @@ void memmove_v(void *dest, const void *src, const size_t n) {
 	print_array_bars_not_compare(pointer_in_array(dest) ? dest : NULL, pointer_in_array(src) ? src : NULL);
 }
 
-void remove_varray_item(int *ptr) {
+void remove_varray_item(vis_int_t *ptr) {
 	if (!pointer_in_array(ptr)) {
 		return;
 	}
-	int* end = display_array + display_array_len;
-	for (int *p = ptr + 1; p < end; p++) {
+	vis_int_t* end = display_array + display_array_len;
+	for (vis_int_t *p = ptr + 1; p < end; p++) {
 		*(p - 1) = *p;
 		mark_array_write();
 		print_array_bars_not_compare(p - 1, p);
 	}
-	*(end - 1) = 0;
+	(end - 1) -> num = 0;
+	(end - 1) -> tag = -1;
 	print_array_bars_not_compare(end - 1, NULL);
 	display_array_len--;
 }
@@ -937,7 +980,8 @@ void set_v_array_len(int n) {
 	}
 	if (new_n < display_array_len) {
 		for (int i = n; i < display_array_len; i++) {
-			display_array[i] = 0;
+			display_array[i].num = 0;
+			display_array[i].tag = -1;
 			// mark_array_write();
 			print_array_bars_not_compare(display_array + i, NULL);
 		}
@@ -977,7 +1021,7 @@ static char perform_verify_sort(int *not_sorted_index, int* idendical_array, int
 	char is_sorted = 1;
 	for (int i = 0; i < display_array_len; i++) {
 		mark_comparison();
-		if (display_array[i] != idendical_array[i]) {
+		if (display_array[i].num != idendical_array[i]) {
 			is_sorted = 0;
 			*not_sorted_index = i;
 			break;
@@ -1017,7 +1061,7 @@ static void shuffle_display_array() {
 		rng |= (rand() & 0x7f) << 24;
 		rng %= display_array_len - i;
 		rng += i;
-		int tmp = display_array[rng];
+		vis_int_t tmp = display_array[rng];
 		display_array[rng] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
@@ -1028,7 +1072,7 @@ static void shuffle_display_array() {
 
 static void reverse_display_array() {
 	for (int i = 0, j = display_array_len - 1; i < j; i++, j--) {
-		int tmp = display_array[j];
+		vis_int_t tmp = display_array[j];
 		display_array[j] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
@@ -1053,7 +1097,7 @@ static void slightly_shuffle_display_array() {
 			rng2 |= (rand() & 0x7f) << 24;
 			rng2 %= display_array_len;
 		}
-		int tmp = display_array[rng1];
+		vis_int_t tmp = display_array[rng1];
 		display_array[rng1] = display_array[rng2];
 		mark_array_write();
 		display_array[rng2] = tmp;
@@ -1062,14 +1106,14 @@ static void slightly_shuffle_display_array() {
 	}
 }
 
-static void circle_pass(int* arr, int nitems) {
+static void circle_pass(vis_int_t* arr, int nitems) {
 	if (nitems <= 1) return;
 	size_t l, r;
 
 	for (l = 0, r = nitems - 1; l < r; l++, r--) {
 		mark_comparison();
-		if (arr[l] > arr[r]) {
-			int tmp = arr[l];
+		if (arr[l].num > arr[r].num) {
+			vis_int_t tmp = arr[l];
 			arr[l] = arr[r];
 			mark_array_write();
 			arr[r] = tmp;
@@ -1080,8 +1124,8 @@ static void circle_pass(int* arr, int nitems) {
 	mark_comparison();
 
 	mark_comparison();
-	if (l == r && arr[l] > arr[r + 1]) {
-		int tmp = arr[l];
+	if (l == r && arr[l].num > arr[r + 1].num) {
+		vis_int_t tmp = arr[l];
 		arr[l] = arr[r + 1];
 		mark_array_write();
 		arr[r + 1] = tmp;
@@ -1100,7 +1144,7 @@ static void first_circle_pass() {
 }
 
 static void shuffle_tail() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1131,7 +1175,7 @@ static void shuffle_tail() {
 		rng |= (rand() & 0x7f) << 24;
 		rng %= display_array_len - i;
 		rng += i;
-		int tmp = display_array[rng];
+		vis_int_t tmp = display_array[rng];
 		display_array[rng] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
@@ -1141,7 +1185,7 @@ static void shuffle_tail() {
 }
 
 static void shuffle_head() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1172,7 +1216,7 @@ static void shuffle_head() {
 		rng |= (rand() & 0x7f) << 24;
 		rng %= shuffle_end - i;
 		rng += i;
-		int tmp = display_array[rng];
+		vis_int_t tmp = display_array[rng];
 		display_array[rng] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
@@ -1182,7 +1226,7 @@ static void shuffle_head() {
 }
 
 static void final_merge_pass() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1229,23 +1273,23 @@ static void sift_down_display_array(size_t heaplen, size_t idx) {
 		i = children[0];
 		if (ccount == 2) {
 			mark_comparison();
-			if (ccount == 2 && display_array[i] < display_array[children[1]]) {
+			if (ccount == 2 && display_array[i].num < display_array[children[1]].num) {
 				i = children[1];
 			}
 			print_array_bars("Performing heapify", &(display_array[children[0]]), 1, &(display_array[children[1]]), 1, 1);
 		}
 		
 		mark_comparison();
-		print_array_bars("Performing heapify", &(display_array[children[idx]]), 1, &(display_array[children[i]]), 1, 1);
-		if (display_array[idx] >= display_array[i]) {
+		print_array_bars("Performing heapify", &(display_array[idx]), 1, &(display_array[i]), 1, 1);
+		if (display_array[idx].num >= display_array[i].num) {
 			break;
 		}
-		int tmp = display_array[idx];
+		vis_int_t tmp = display_array[idx];
 		display_array[idx] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
 		mark_array_write();
-		print_array_bars("Performing heapify", &(display_array[children[idx]]), 0, &(display_array[children[i]]), 0, 1);
+		print_array_bars("Performing heapify", &(display_array[idx]), 0, &(display_array[i]), 0, 1);
 		idx = i;
 	}
 }
@@ -1264,10 +1308,11 @@ static void heapify_display_array(size_t heaplen) {
 #define get_last_child(x) (2 * (x + 1))
 
 static void build_sorted_heap() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
-		assert(tmp_arr[i] == i + 1);
+		// The following assertion was meant to ensure that the array given is already sorted, which it by default should be.
+		// assert(tmp_arr[i].num == i + 1);  // CHECK tmp_arr[i].num with clone_array[i] instead! Need to add new parameter.
 		mark_aux_array_write();
 		print_array_bars("Generating heap input", &(display_array[i]), 0, NULL, 0, 1);
 	}
@@ -1294,13 +1339,13 @@ static void build_sorted_heap() {
 }
 
 struct used_tag {
-	int x;
+	vis_int_t x;
 	char used;
 };
 
 #define get_first_child(x) (2 * x + 1)
 
-static void build_bst(int* dest, int i, struct used_tag *tmp_arr, int start, int end, int* __restrict__ max_i_reach, int recurse_depth) {
+static void build_bst(vis_int_t* dest, int i, struct used_tag *tmp_arr, int start, int end, int* __restrict__ max_i_reach, int recurse_depth) {
 	if (recurse_depth <= 0) {
 		return;
 	}
@@ -1341,7 +1386,8 @@ static void build_binary_search_tree() {
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i].x = display_array[i];
 		tmp_arr[i].used = 0;
-		assert(tmp_arr[i].x == i + 1);
+		// The following assertion was meant to ensure that the array given is already sorted, which it by default should be.
+		// assert(tmp_arr[i].x.num == i + 1);  // CHECK tmp_arr[i].num with clone_array[i] instead! Need to add new parameter.
 		mark_aux_array_write();
 		print_array_bars("Generating binary search tree", &(display_array[i]), 0, NULL, 0, 1);
 	}
@@ -1361,7 +1407,7 @@ static void build_binary_search_tree() {
 }
 
 static void split_quarters() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1409,7 +1455,7 @@ static void reverse_split_quarters() {
 }
 
 static void pipe_organ_input() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1437,7 +1483,7 @@ static void pipe_organ_input() {
 
 static void half_reverse_display_array() {
 	for (int i = 0, j = display_array_len - 1; i < (display_array_len - 1) / 4; i++, j--) {
-		int tmp = display_array[j];
+		vis_int_t tmp = display_array[j];
 		display_array[j] = display_array[i];
 		mark_array_write();
 		display_array[i] = tmp;
@@ -1446,16 +1492,17 @@ static void half_reverse_display_array() {
 	}
 }
 
+// BUG and dilemma: Do we consider shuffle odds as in odd numbered-positions? or odd numbers in the array?
 static void reverse_odds() {
-	int *start = display_array, *end = display_array + display_array_len - 1;
-	if (*start % 2 == 0) {
+	vis_int_t *start = display_array, *end = display_array + display_array_len - 1;
+	if (start -> num % 2 == 0) {
 		start++;
 	}
-	if (*end % 2 == 0) {
+	if (end -> num % 2 == 0) {
 		end--;
 	}
 	for (; start < end; start += 2, end -= 2) {
-		int tmp = *end;
+		vis_int_t tmp = *end;
 		*end = *start;
 		mark_array_write();
 		*start = tmp;
@@ -1464,16 +1511,17 @@ static void reverse_odds() {
 	}
 }
 
+// BUG and dilemma: Do we consider shuffle evens as in even numbered-positions? or even numbers in the array?
 static void reverse_evens() {
-	int *start = display_array, *end = display_array + display_array_len - 1;
-	if (*start % 2 != 0) {
+	vis_int_t *start = display_array, *end = display_array + display_array_len - 1;
+	if (start -> num % 2 != 0) {
 		start++;
 	}
-	if (*end % 2 != 0) {
+	if (end -> num % 2 != 0) {
 		end--;
 	}
 	for (; start < end; start += 2, end -= 2) {
-		int tmp = *end;
+		vis_int_t tmp = *end;
 		*end = *start;
 		mark_array_write();
 		*start = tmp;
@@ -1483,7 +1531,8 @@ static void reverse_evens() {
 }
 
 static void shuffle_odds() {
-	assert(display_array[0] % 2 == 1);
+	// BUG and dilemma: Do we consider shuffle odds as in odd numbered-positions? or odd numbers in the array?
+	// assert(display_array[0].num % 2 == 1); // For odd positions instead of numbers just comment this out.
 	int odds_len = display_array_len / 2;
 	if (display_array_len % 2 != 0) {
 		odds_len++;
@@ -1497,9 +1546,10 @@ static void shuffle_odds() {
 		rng += i;
 		rng *= 2;
 		int i1 = i * 2;
-		int tmp = display_array[rng];
-		assert(tmp % 2 == 1);
-		assert(display_array[i1] % 2 == 1);
+		vis_int_t tmp = display_array[rng];
+		assert(tmp.num % 2 == 1);
+		// BUG and dilemma: Do we consider shuffle odds as in odd numbered-positions? or odd numbers in the array?
+		assert(display_array[i1].num % 2 == 1);
 		display_array[rng] = display_array[i1];
 		mark_array_write();
 		display_array[i1] = tmp;
@@ -1509,7 +1559,8 @@ static void shuffle_odds() {
 }
 
 static void shuffle_evens() {
-	assert(display_array[1] % 2 == 0);
+	// BUG and dilemma: Do we consider shuffle evens as in even numbered-positions? or even numbers in the array?
+	// assert(display_array[1].num % 2 == 0); // For even positions instead of numbers just comment this out.
 	int evens_len = display_array_len / 2;
 	for (int i = 0; i < evens_len; i++) {
 		int rng = rand() & 0xff;
@@ -1521,9 +1572,10 @@ static void shuffle_evens() {
 		rng *= 2;
 		rng++;
 		int i1 = i * 2 + 1;
-		int tmp = display_array[rng];
-		assert(tmp % 2 == 0);
-		assert(display_array[i1] % 2 == 0);
+		vis_int_t tmp = display_array[rng];
+		assert(tmp.num % 2 == 0);
+		// BUG and dilemma: Do we consider shuffle evens as in even numbered-positions? or even numbers in the array?
+		assert(display_array[i1].num % 2 == 0);
 		display_array[rng] = display_array[i1];
 		mark_array_write();
 		display_array[i1] = tmp;
@@ -1533,7 +1585,7 @@ static void shuffle_evens() {
 }
 
 static void final_bitonic_pass() {
-	int tmp_arr[display_array_len];
+	vis_int_t tmp_arr[display_array_len];
 	for (int i = 0; i < display_array_len; i++) {
 		tmp_arr[i] = display_array[i];
 		mark_aux_array_write();
@@ -1562,8 +1614,8 @@ static void final_bitonic_pass() {
 static void final_radix_pass() {
 	int len1 = display_array_len / 2 + 1;
 	int len2 = display_array_len - len1;
-	int tmp_arr1[len1];
-	int tmp_arr2[len2];
+	vis_int_t tmp_arr1[len1];
+	vis_int_t tmp_arr2[len2];
 	assert(len2 <= len1);
 	for (int i = 0; i < len1; i++) {
 		tmp_arr1[i] = display_array[i];
@@ -1593,8 +1645,8 @@ static void final_radix_pass() {
 static void cross_weave_1() {
 	int len1 = display_array_len / 2 + 1;
 	int len2 = display_array_len - len1;
-	int tmp_arr1[len1];
-	int tmp_arr2[len2];
+	vis_int_t tmp_arr1[len1];
+	vis_int_t tmp_arr2[len2];
 	assert(len2 <= len1);
 	for (int i = 0; i < len1; i++) {
 		tmp_arr1[i] = display_array[i];
@@ -1626,8 +1678,8 @@ static void cross_weave_1() {
 static void cross_weave_2() {
 	int len1 = display_array_len / 2 + 1;
 	int len2 = display_array_len - len1;
-	int tmp_arr1[len1];
-	int tmp_arr2[len2];
+	vis_int_t tmp_arr1[len1];
+	vis_int_t tmp_arr2[len2];
 	assert(len2 <= len1);
 	for (int i = 0, j = len1 - 1; i < len1; i++, j--) {
 		tmp_arr1[i] = display_array[j];
@@ -1717,6 +1769,7 @@ static void perform_selected_shuffle(const char* term, int* idendical_array, int
 		return;
 	}
 	if (strcmp(term, "antiquicksort") == 0) {
+		highest_item = display_array_len - 1;
 		if (antiqsort_v(display_array, display_array_len, idendical_array, actual_len) < 0) {
 			error_pause(error_handle_mode);
 		}
@@ -2086,11 +2139,11 @@ static int get_display_mode(const char* arg) {
 
 // ========== Helper Functions ==========
 
-static int find_max_int(int* arr, size_t len) {
+static int find_max_int(vis_int_t* arr, size_t len) {
 	int r = INT_MIN;
 	for (; len > 0; len--, arr++) {
-		if (*arr > r) {
-			r = *arr;
+		if (arr -> num > r) {
+			r = arr -> num;
 		}
 	}
 	return r;
@@ -2284,7 +2337,7 @@ static int larger_int_back(const void* a, const void* b) {
 	char catprefix[get_concat_sort_name_len(prefixtxt)];
 	cpy_concat_sort_name(catprefix, prefixtxt);
 	print_array_bars(catprefix, a, 1, b, 1, 1);
-	return (*((int*)a)) - (*((int*)b));
+	return (((vis_int_t*)a) -> num) - (((vis_int_t*)b) -> num);
 }
 
 #include <math.h>
@@ -2391,8 +2444,18 @@ static char jupiterbjy_number_representation(int i) {
 	return '0' + i;
 }
 
+static char jupiterbjy_number_representation2(int i) {
+	if (i < 0) {
+		return ' ';
+	}
+	if (i > -9 * (stability_test_highest_tag + 1) / 10 && i < (stability_test_highest_tag + 1) * 9 / 10) {
+		return '1' + i * 10 / (stability_test_highest_tag + 1);
+	}
+	return i == stability_test_highest_tag ? ' ' : 'X';
+}
+
 static char pointer_in_array(const void* p) {
-	return p >= (void*) display_array && p < ((void*) display_array) + sizeof(int) * display_array_len;
+	return p >= (void*) display_array && p < ((void*) display_array) + sizeof(vis_int_t) * display_array_len;
 }
 
 /**
@@ -2416,7 +2479,7 @@ static size_t stpow(size_t base, size_t exp) {
 }
 
 static size_t int_num_digits(const void* a, size_t b) {
-	int n = *((int*)a);
+	int n = ((vis_int_t*)a) -> num;
 	if (n == 0) {
 		return 1;
 	}
@@ -2429,7 +2492,7 @@ static size_t int_num_digits(const void* a, size_t b) {
 }
 
 static size_t base_n_modulo(const void* a, size_t b) {
-	return ((*((int*)a)) / stpow(radix_base, b - 1)) % radix_base;
+	return ((((vis_int_t*)a) -> num) / stpow(radix_base, b - 1)) % radix_base;
 }
 
 /**
@@ -2658,22 +2721,22 @@ static int get_chord_timing(int delay_ms) {
 	return delay_ms * n_crotchets_in_bar;
 }
 
-static double get_freq_by_pointer(const int *p) {
+static double get_freq_by_pointer(const vis_int_t *p) {
 	if (!pointer_in_array(p)) {
 		return tuning_freq;
 	}
 	mstime_t mst1 = mstime() - start_time_ms;
 	switch (chord_mode) {
 	case CHORD_MODE_OFF:
-		return get_freq_between_bounds(*p, highest_item, tone_lower_cent_bound, tone_upper_cent_bound, tuning_freq);
+		return get_freq_between_bounds(p -> num, highest_item, tone_lower_cent_bound, tone_upper_cent_bound, tuning_freq);
 	case CHORD_MODE_NOTE:
-		return get_freq_between_bounds_semitones(*p, highest_item, tone_lower_cent_bound / 100, tone_upper_cent_bound / 100, tuning_freq);
+		return get_freq_between_bounds_semitones(p -> num, highest_item, tone_lower_cent_bound / 100, tone_upper_cent_bound / 100, tuning_freq);
 	case CHORD_MODE_SINGLE:
-		return get_freq_between_bounds_arpeggio(*p, highest_item, chord_start_semitone, chord_octave_range, chords[chord_no], tuning_freq, use_eq_temp);
+		return get_freq_between_bounds_arpeggio(p -> num, highest_item, chord_start_semitone, chord_octave_range, chords[chord_no], tuning_freq, use_eq_temp);
 	case CHORD_MODE_SIMPLE_PROGRESSION:
-		return get_freq_between_bounds_arpeggio(*p, highest_item, chord_start_semitone, chord_octave_range, custom_chord_progression[is_sorting ? ((int) mst1 / chord_progression_timing_ms) % custom_chord_progression_len : 0], tuning_freq, use_eq_temp);
+		return get_freq_between_bounds_arpeggio(p -> num, highest_item, chord_start_semitone, chord_octave_range, custom_chord_progression[is_sorting ? ((int) mst1 / chord_progression_timing_ms) % custom_chord_progression_len : 0], tuning_freq, use_eq_temp);
 	}
-	return get_freq_between_bounds(*p, highest_item, tone_lower_cent_bound, tone_upper_cent_bound, tuning_freq);
+	return get_freq_between_bounds(p -> num, highest_item, tone_lower_cent_bound, tone_upper_cent_bound, tuning_freq);
 }
 
 // struct opt_hash {
@@ -2807,7 +2870,7 @@ static double change_if_valid_float(const char* s, const double original) {
 	return atof(s);
 }
 
-static void parse_option(const char* option_name, const char* option_value, int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization) {
+static void parse_option(const char* option_name, const char* option_value, int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization/*, int *__restrict__ n_similar_items*/) {
 	int opt_hash = dwhash(option_name);
 	switch (opt_hash) {
 	case log_sound_hash:
@@ -3042,7 +3105,7 @@ static void create_options_file() {
 
 #define READ_FILE_BUFFER 40
 
-static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization) {
+static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr_len, char** __restrict__ shuffle_type, char** __restrict__ chord_arg, char** __restrict__ wave_shape, char* __restrict__ use_optimization/*, int *__restrict__ n_similar_items*/) {
 	FILE* opt = fopen(SETTINGS_FILE, "r");
 	if (opt == NULL) {
 		create_options_file();
@@ -3069,7 +3132,7 @@ static void set_options_from_file(int* __restrict__ delay, int* __restrict__ arr
 		char* eq_chr = strchr(optln, '=');
 		if (eq_chr != NULL) {
 			*eq_chr = '\0';
-			parse_option(optln, eq_chr + 1, delay, arr_len, shuffle_type, chord_arg, wave_shape, use_optimization);
+			parse_option(optln, eq_chr + 1, delay, arr_len, shuffle_type, chord_arg, wave_shape, use_optimization/*, n_similar_items*/);
 		}
 		while (!have_newline) {
 			fg_ret = fgets(optln, READ_FILE_BUFFER, opt);

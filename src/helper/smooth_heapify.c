@@ -63,7 +63,7 @@ static void shift_down(pshift_t *pshift, size_t byn) {
 	assert(pshift -> lpsm2 <= pshift -> lpsm1);
 }
 
-static void sift(int *display_array, int display_array_len, pshift_t pshift, size_t head) {
+static void sift(vis_int_t *display_array, int display_array_len, pshift_t pshift, size_t head) {
 	/* 
 	 * we do not use Floyd's improvements to the heapsort sift, because we
 	 * are not doing what heapsort does - always moving nodes from near
@@ -72,7 +72,7 @@ static void sift(int *display_array, int display_array_len, pshift_t pshift, siz
 
 	assert(head < display_array_len);
 
-	int val = display_array[head];
+	vis_int_t val = display_array[head];
 	print_array_bars("Performing smooth heapify", display_array + head, 0, NULL, 0, 1);
 
 	while (pshift.pshift > 1) {
@@ -82,14 +82,14 @@ static void sift(int *display_array, int display_array_len, pshift_t pshift, siz
 		assert(rt < display_array_len);
 		assert(lf < display_array_len);
 
-		char left_leq = display_array[lf] >= display_array[rt];
+		char left_leq = display_array[lf].num >= display_array[rt].num;
 		mark_comparison();
 		print_array_bars("Performing smooth heapify", display_array + lf, 1, display_array + rt, 1, 1);
 
 		if (left_leq) {
 			mark_comparison();
 			print_array_bars("Performing smooth heapify", display_array + lf, 1, NULL, 0, 1);
-			if (display_array[lf] < val) {
+			if (display_array[lf].num < val.num) {
 				break;
 			}
 			if (head != lf) {
@@ -102,7 +102,7 @@ static void sift(int *display_array, int display_array_len, pshift_t pshift, siz
 		} else {
 			mark_comparison();
 			print_array_bars("Performing smooth heapify", display_array + rt, 1, NULL, 0, 1);
-			if (display_array[rt] < val) {
+			if (display_array[rt].num < val.num) {
 				break;
 			}
 			if (head != rt) {
@@ -119,17 +119,17 @@ static void sift(int *display_array, int display_array_len, pshift_t pshift, siz
 	print_array_bars("Performing smooth heapify", display_array + head, 1, NULL, 0, 1);
 }
 
-static void trinkle(int *display_array, int display_array_len, size_t p, pshift_t pshift, size_t head, char is_trusty) {
+static void trinkle(vis_int_t *display_array, int display_array_len, size_t p, pshift_t pshift, size_t head, char is_trusty) {
 	assert(head < display_array_len);
 
-	int val = display_array[head];
+	vis_int_t val = display_array[head];
 	print_array_bars("Performing smooth heapify", display_array + head, 0, NULL, 0, 1);
 
 	while (p != 1) {
 		size_t stepson = head - pshift.lps;
 		mark_comparison();
 		print_array_bars("Performing smooth heapify", display_array + stepson, 1, NULL, 0, 1);
-		if (display_array[stepson] <= val) {
+		if (display_array[stepson].num <= val.num) {
 			break; // current node is greater than head. Sift.
 		}
 
@@ -147,13 +147,13 @@ static void trinkle(int *display_array, int display_array_len, size_t p, pshift_
 
 			mark_comparison();
 			print_array_bars("Performing smooth heapify", display_array + stepson, 1, display_array + rt, 1, 1);
-			if (display_array[rt] >= display_array[stepson]) {
+			if (display_array[rt].num >= display_array[stepson].num) {
 				break;
 			}
 
 			mark_comparison();
 			print_array_bars("Performing smooth heapify", display_array + stepson, 1, display_array + lf, 1, 1);
-			if (display_array[lf] >= display_array[stepson]) {
+			if (display_array[lf].num >= display_array[stepson].num) {
 				break;
 			}
 		}
@@ -176,7 +176,7 @@ static void trinkle(int *display_array, int display_array_len, size_t p, pshift_
 	}
 }
 
-void smooth_heapify(int *display_array, int display_array_len) {
+void smooth_heapify(vis_int_t *display_array, int display_array_len) {
 	/*
 	 * These variables need a little explaining. If our string of heaps
 	 * is of length 38, then the heaps will be of size 25+9+3+1, which are
