@@ -30,12 +30,12 @@ static void bitonicmerge(void *list, size_t nitems, const size_t size, int (*com
 	void *left_ptr = list;
 	void *right_ptr = list + (nitems / 2) * size;
 	void *stop_ptr = list + nitems * size;
-	// Comparing the leftmost element with the middle element, and the middle element with the last element. 
-	// All three being equal means that the entire array given is all identical.
-	// No further swaps are necessary.
-	if (compr(left_ptr, right_ptr) == 0 && compr(right_ptr, stop_ptr - size) == 0) {
-		return;
-	}
+	// // Comparing the leftmost element with the middle element, and the middle element with the last element. 
+	// // All three being equal means that the entire array given is all identical.
+	// // No further swaps are necessary.
+	// if (compr(left_ptr, right_ptr) == 0 && compr(right_ptr, stop_ptr - size) == 0) {
+	// 	return;
+	// }
 	// The array given can be in two arrangements:
 	//   1 - The array is given in a triangle-like arrangement, ascending on left half and decending on right half.
 	//       The middle element will be the highest. This is one bitonic sequence. 
