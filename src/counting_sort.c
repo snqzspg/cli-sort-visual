@@ -67,7 +67,8 @@ int counting_sort(void *list, size_t nitems, size_t size, size_t largest_key, si
 }
 
 static size_t vis_int_key(void *item) {
-	return (size_t) (*((int *)item));
+	// return (size_t) (*((int *)item));
+	return (size_t) (((vis_int_t *)item) -> num);
 }
 
 static int call_counting_sort(void* list, size_t nitems, size_t size, int (*compr)(const void*, const void*), size_t nvis_args, vis_arg_t *vis_args) {
